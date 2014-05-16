@@ -1,6 +1,6 @@
 <?php
 /*
-Plugin Name: WP Antivirus Site Protection
+Plugin Name: WP Antivirus Site Protection (by SiteGuarding.com)
 Plugin URI: http://www.siteguarding.com/en/website-extensions
 Description: Adds more security for your WordPress website. Server-side scanning. Performs deep website scans of all the files. Virus and Malware detection.
 Version: 1.1
