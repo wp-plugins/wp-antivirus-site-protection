@@ -3,16 +3,18 @@
 Plugin Name: WP Antivirus Site Protection (by SiteGuarding.com)
 Plugin URI: http://www.siteguarding.com/en/website-extensions
 Description: Adds more security for your WordPress website. Server-side scanning. Performs deep website scans of all the files. Virus and Malware detection.
-Version: 1.1
+Version: 1.2
 Author: SiteGuarding.com (SafetyBis Ltd.)
 Author URI: http://www.siteguarding.com
 License: GPLv2
 TextDomain: plgavp
 */
-define( 'WPAGP_SVN', false);
+define( 'WPAVP_SVN', true);
 
 define( 'SITEGUARDING_SERVER', 'https://www.siteguarding.com/ext/antivirus/index.php');
 
+
+error_reporting(E_ERROR);
 
 
 if( !is_admin() ) {
@@ -86,14 +88,14 @@ if( is_admin() ) {
 			<h2 class="avp_header icon_radar">WP Antivirus Site Protection</h2>
 			
 		<?php
-				if (!SGAntiVirus::checkServerSettings()) return;
 		
 		
 						if (isset($_POST['action']) && $_POST['action'] == 'ConfirmRegistration' && check_admin_referer( 'name_254f4bd3ea8d' ))
 		{
+			$errors = SGAntiVirus::checkServerSettings(true);
 			$access_key = md5(time.get_site_url());
 			$email = trim($_POST['email']);
-			$result = SGAntiVirus::sendRegistration(get_site_url(), $email, $access_key);
+			$result = SGAntiVirus::sendRegistration(get_site_url(), $email, $access_key, $errors);
 			if ($result === true)
 			{
 				$data = array('registered' => 1, 'email' => $email, 'access_key' => $access_key);
@@ -150,6 +152,8 @@ if( is_admin() ) {
 		
 				$license_info = SGAntiVirus::GetLicenseInfo(get_site_url(), $params['access_key']);
 		if ($license_info === false) { SGAntiVirus::page_ConfirmRegistration(); return; }
+		
+				if (!SGAntiVirus::checkServerSettings()) return;
 
 		
 		
@@ -182,7 +186,14 @@ if( is_admin() ) {
 		if (isset($_POST['action']) && $_POST['action'] == 'update' && check_admin_referer( 'name_AFAD78D85E01' ))
 		{
 			$data = array('access_key' => trim($_POST['access_key']));
+			if (trim($_POST['access_key']) != '') 
+			{
+				$data['registered'] = 1;
+				$data['email'] = get_option( 'admin_email' );
+			}
 			plgwpavp_SetExtraParams($data);
+			
+			SGAntiVirus::ShowMessage('Settings saved.');
 		}
 		
 		$params = plgwpavp_GetExtraParams();
@@ -258,6 +269,10 @@ wp_nonce_field( 'name_AFAD78D85E01' );
     
 	function plgwpavp_uninstall()
 	{
+		
+		global $wpdb;
+		$table_name = $wpdb->prefix . 'plgwpavp_config';
+		$wpdb->query( 'DROP TABLE ' . $table_name );
 		
 	}
 	register_uninstall_hook( __FILE__, 'plgwpavp_uninstall' );
@@ -348,7 +363,7 @@ class SGAntiVirus {
 		
 			<h3>Registration</h3>
 			
-			<p>If you are using this plugin the first time you need to register your website on <a href="http://www.siteguarding.com">www.SiteGuarding.com</a>.<br>Click the button "Agree & Confirm" to complete registration process.</p>
+			<p>If you are using this plugin the first time you need to register your website on <a href="http://www.siteguarding.com">www.SiteGuarding.com</a>.<br>Click the button "Agree & Confirm Registration" to complete registration process.</p>
 			
 			<p>Already registered? Go to <a href="admin.php?page=plgavp_Antivirus_settings_page">Antivirus Settings</a> page and enter your Access Key.</p>
 		
@@ -381,7 +396,7 @@ class SGAntiVirus {
 		wp_nonce_field( 'name_254f4bd3ea8d' );
 		?>			
 		<p class="submit">
-		  <input type="submit" name="submit" id="submit" class="button button-primary" value="Agree & Confirm">
+		  <input type="submit" name="submit" id="submit" class="button button-primary" value="Agree & Confirm Registration">
 		</p>
 		
 		<input type="hidden" name="page" value="plgavp_Antivirus"/>
@@ -412,14 +427,17 @@ class SGAntiVirus {
 <?php
 if (intval($params['scans']) == 0) {
 ?>
-	<p class="avp_attention">Your version of antivirus has limits. Get PRO version. <a href="https://www.siteguarding.com/en/buy-service/antivirus-site-protection?domain=<?php echo urlencode( get_site_url() ); ?>&email=<?php echo urlencode(get_option( 'admin_email' )); ?>" target="_blank">Learn more</a>.</p>
+	<p class="avp_attention msg_box msg_error msg_icon">Your version of antivirus has limits. Get PRO version. <a href="https://www.siteguarding.com/en/buy-service/antivirus-site-protection?domain=<?php echo urlencode( get_site_url() ); ?>&email=<?php echo urlencode(get_option( 'admin_email' )); ?>" target="_blank">Learn more</a>.</p>
 <?php
 }
 ?>
 	
 <p>
 Free Scans: <?php echo $params['scans']; ?><br />
-Valid till: <?php echo $params['exp_date']; ?>
+Valid till: <?php echo $params['exp_date']."&nbsp;&nbsp;"; 
+if ($params['exp_date'] < date("Y-m-d")) echo '<span class="msg_box msg_error">Expired</span>';
+if ($params['exp_date'] < date("Y-m-d", mktime(0, 0, 0, date("m")  , date("d")-7, date("Y")))) echo '<span class="msg_box msg_warning">Will Expired Soon</span>';
+?>
 </p>
 
 <p class="avp_getpro"><a href="https://www.siteguarding.com/en/buy-service/antivirus-site-protection?domain=<?php echo urlencode( get_site_url() ); ?>&email=<?php echo urlencode(get_option( 'admin_email' )); ?>" target="_blank">Get PRO version version</a></p>
@@ -611,14 +629,15 @@ Valid till: <?php echo $params['exp_date']; ?>
 	}
 
 	
-	function sendRegistration($domain, $email, $access_key = '')
+	function sendRegistration($domain, $email, $access_key = '', $errors = '')
 	{
 			    $link = SITEGUARDING_SERVER.'?action=register&type=json&data=';
 	    
 	    $data = array(
 			'domain' => $domain,
 			'email' => $email,
-			'access_key' => $access_key
+			'access_key' => $access_key,
+			'errors' => $errors
 		);
 	    $link .= base64_encode(json_encode($data));
 	    $msg = trim(file_get_contents($link));
@@ -628,19 +647,22 @@ Valid till: <?php echo $params['exp_date']; ?>
 	}
 
 	
-	function checkServerSettings()
+	function checkServerSettings($return_error_names = false)
 	{
+		$error_name = array();
 		$error = 0;
 		
 				if ( !function_exists('exec') ) 
 		{
 			$error = 1;
+			$error_name[] = 'exec';
 			self::ShowMessage('Safe mode is enabled on the server.');
 		}
 		
 				if (!extension_loaded('ionCube Loader'))
 		{
 			$error = 1;
+			$error_name[] = 'ioncube';
 			self::ShowMessage('Ioncube is not installed.');
 			?>
 			IonCube loader is not installed on the server. Antivirus will not work correct. More information and how to install IonCube loaders read <a href="http://www.ioncube.com/loaders.php" target="_blank">here</a>.
@@ -650,13 +672,14 @@ Valid till: <?php echo $params['exp_date']; ?>
 				if (!is_writable(dirname(__FILE__).'/tmp/'))
 		{
 			$error = 1;
+			$error_name[] = 'tmp is not writable';
 			self::ShowMessage('Folder '.dirname(__FILE__).'/tmp/'.' is not writable.');
 			?>
 			Please change folder permission to 777 to make it writable.
 			<?php
 		}
 		
-		
+		if ($return_error_names) return json_encode($error_name);
 		if ($error == 1) return false;
 		else return true;
 	}
