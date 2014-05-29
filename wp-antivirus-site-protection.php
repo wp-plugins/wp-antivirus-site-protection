@@ -3,7 +3,7 @@
 Plugin Name: WP Antivirus Site Protection (by SiteGuarding.com)
 Plugin URI: http://www.siteguarding.com/en/website-extensions
 Description: Adds more security for your WordPress website. Server-side scanning. Performs deep website scans of all the files. Virus and Malware detection.
-Version: 1.2
+Version: 2.0
 Author: SiteGuarding.com (SafetyBis Ltd.)
 Author URI: http://www.siteguarding.com
 License: GPLv2
@@ -15,7 +15,6 @@ define( 'SITEGUARDING_SERVER', 'https://www.siteguarding.com/ext/antivirus/index
 
 
 error_reporting(E_ERROR);
-
 
 if( !is_admin() ) {
 	if ( isset($_GET['task']) && $_GET['task'] == 'cron' )
@@ -40,7 +39,7 @@ if( !is_admin() ) {
 					plgwpavp_SetExtraParams($data);
 				}	
 				
-				include_once(__DIR__.'/tmp/module.php');
+				include_once(dirname(__FILE__).'/sgantivirus.class.php');
 				
 				if (!class_exists('SGAntiVirus_module'))
 				{
@@ -49,7 +48,7 @@ if( !is_admin() ) {
 				
 								$_POST['scan_path'] = ABSPATH;
 				$_POST['access_key'] = $access_key;
-				$_POST['send_files'] = 0;
+				$_POST['do_evristic'] = $params['do_evristic'];
 				$_POST['domain'] = get_site_url();
 				$_POST['email'] = get_option( 'admin_email' );
 				
@@ -60,7 +59,6 @@ if( !is_admin() ) {
 		exit;
 	}
 }
-
 
 
 
@@ -109,30 +107,25 @@ if( is_admin() ) {
 		
 				if (isset($_POST['action']) && $_POST['action'] == 'StartScan' && check_admin_referer( 'name_254f4bd3ea8d' ))
 		{
-			$data = array('allow_scan' => intval($_POST['allow_scan']), 'send_files' => intval($_POST['send_files']));
+			$data = array('allow_scan' => intval($_POST['allow_scan']), 'do_evristic' => intval($_POST['do_evristic']));
 			plgwpavp_SetExtraParams($data);
 			
 			$params = plgwpavp_GetExtraParams();
 			
-						if ( !isset($params['last_scan_date']) || $params['last_scan_date'] < date("Y-m-d"))
+			if (!file_exists(dirname(__FILE__).'/sgantivirus.class.php'))
 			{
-								$domain = get_site_url();
-				$access_key = $params['access_key'];
-				SGAntiVirus::GetAntivirusModule($domain, $access_key);
-				
-				$data = array('last_scan_date' => date("Y-m-d"));
-				plgwpavp_SetExtraParams($data);
-				
-				
+								SGAntiVirus::ShowMessage('File '.dirname(__FILE__).'/sgantivirus.class.php is not exist.');
+				return;
 			}
 			
-			include_once(__DIR__.'/tmp/module.php');
+			include_once(dirname(__FILE__).'/sgantivirus.class.php');
 			
 			if (!class_exists('SGAntiVirus_module'))
 			{
 								SGAntiVirus::ShowMessage('Main antivirus scanner module is not loaded. Please try again.');
 				return;
 			}
+			
 			
 			$session_id = md5(time().'-'.rand(1,10000));
 			ob_start();
@@ -239,6 +232,197 @@ wp_nonce_field( 'name_AFAD78D85E01' );
 		<b>Command:</b> wget -O /dev/null "<?php echo get_site_url(); ?>/index.php?task=cron&access_key=<?php echo $params['access_key']; ?>"
 		</p>
 
+		<?php
+	}
+	
+	
+	add_action('admin_menu', 'register_plgavp_extentions_subpage');
+
+	function register_plgavp_extentions_subpage() {
+		add_submenu_page( 'plgavp_Antivirus', 'Extentions', 'Extentions', 'manage_options', 'plgavp_Antivirus_extentions_page', 'plgavp_antivirus_extentions_page_callback' ); 
+	}
+	
+	
+	function plgavp_antivirus_extentions_page_callback()
+	{
+		wp_enqueue_style( 'plgavp_LoadStyle' );
+		
+		?>
+		
+		<h2 class="avp_header icon_settings">Security Extentions</h2>
+		
+		<div class="grid-box width25 grid-h" style="width: 250px;">
+		  <div class="module mod-box widget_black_studio_tinymce">
+		    <div class="deepest">
+		      <h3 class="module-title">WordPress Admin Protection</h3>
+		      <div class="textwidget">
+		        <table class="table-val" style="height: 180px;">
+		          <tbody>
+		            <tr>
+		              <td class="table-vat">
+		                <ul style="list-style-type: circle;">
+		                  <li>
+		                    Prevents password brute force attack with strong 'secret key'
+		                  </li>
+		                  <li>
+                    		White & Black IP list access
+		                  </li>
+		                  <li>
+		                    Notifications by email about all not authorized actions
+		                  </li>
+		                  <li>
+		                    Protection for login page with captcha code
+		                  </li>
+		                </ul>
+		              </td>
+		            </tr>
+		            <tr>
+		              <td class="table-vab">
+		                <a class="button button-primary extbttn" href="https://www.siteguarding.com/en/wordpress-admin-protection">
+		                  Learn More
+		                </a>
+		              </td>
+		            </tr>
+		          </tbody>
+		        </table>
+		        <p>
+		          <img class="imgpos_ext" alt="WordPress Admin Protection" src="<?php echo plugins_url('images/wpAdminProtection-logo.png', __FILE__); ?>">
+		        </p>
+		      </div>
+		    </div>
+		  </div>
+		</div>
+		
+		
+		<div class="grid-box width25 grid-h" style="width: 250px;">
+		  <div class="module mod-box widget_black_studio_tinymce">
+		    <div class="deepest">
+		      <h3 class="module-title">Graphic Captcha Protection</h3>
+		      <div class="textwidget">
+		        <table class="table-val" style="height: 180px;">
+		          <tbody>
+		            <tr>
+		              <td class="table-vat">
+		                <ul style="list-style-type: circle;">
+		                  <li>
+		                    Strong captcha protection
+		                  </li>
+		                  <li>
+                    		Easy for human, complicated for robots
+		                  </li>
+		                  <li>
+		                    Prevents password brute force attack on login page
+		                  </li>
+		                  <li>
+		                    Blocks spam software
+		                  </li>
+		                  <li>
+		                    Different levels of the security
+		                  </li>
+		                </ul>
+		              </td>
+		            </tr>
+		            <tr>
+		              <td class="table-vab">
+		                <a class="button button-primary extbttn" href="https://www.siteguarding.com/en/wordpress-graphic-captcha-protection">
+		                  Learn More
+		                </a>
+		              </td>
+		            </tr>
+		          </tbody>
+		        </table>
+		        <p>
+		          <img class="imgpos_ext" alt="WordPress Graphic Captcha Protection" src="<?php echo plugins_url('images/wpGraphicCaptchaProtection-logo.png', __FILE__); ?>">
+		        </p>
+		      </div>
+		    </div>
+		  </div>
+		</div>
+		
+		
+		<div class="grid-box width25 grid-h" style="width: 250px;">
+		  <div class="module mod-box widget_black_studio_tinymce">
+		    <div class="deepest">
+		      <h3 class="module-title">Admin Graphic Protection</h3>
+		      <div class="textwidget">
+		        <table class="table-val" style="height: 180px;">
+		          <tbody>
+		            <tr>
+		              <td class="table-vat">
+		                <ul style="list-style-type: circle;">
+		                  <li>
+		                    Good solution if you access to your website from public places or infected computers
+		                  </li>
+		                  <li>
+		                    Prevent password brute force attack with strong "graphic password"
+		                  </li>
+		                  <li>
+		                    Notifications by email about all not authorized actions
+		                  </li>
+		                </ul>
+		              </td>
+		            </tr>
+		            <tr>
+		              <td class="table-vab">
+		                <a class="button button-primary extbttn" href="https://www.siteguarding.com/en/wordpress-admin-graphic-password">
+		                  Learn More
+		                </a>
+		              </td>
+		            </tr>
+		          </tbody>
+		        </table>
+		        <p>
+		          <img class="imgpos_ext" alt="WordPress Admin Graphic Protection" src="<?php echo plugins_url('images/wpAdminGraphicPassword-logo.png', __FILE__); ?>">
+		        </p>
+		      </div>
+		    </div>
+		  </div>
+		</div>
+		
+		
+		<div class="grid-box width25 grid-h" style="width: 250px;">
+		  <div class="module mod-box widget_black_studio_tinymce">
+		    <div class="deepest" >
+		      <h3 class="module-title">User Access Notification</h3>
+		      <div class="textwidget">
+		        <table class="table-val" style="height: 180px;">
+		          <tbody>
+		            <tr>
+		              <td class="table-vat">
+		                <ul style="list-style-type: circle;">
+		                  <li>
+		                    Catchs successful and failed login actions
+		                  </li>
+		                  <li>
+		                    Sends notifications to the user and to the administrator by email
+		                  </li>
+		                  <li>
+		                    Shows Date/Time of access action, Browser, IP address, Location (City, Country)
+		                  </li>
+		                </ul>
+		              </td>
+		            </tr>
+		            <tr>
+		              <td class="table-vab">
+		                <a class="button button-primary extbttn" href="https://www.siteguarding.com/en/wordpress-user-access-notification">
+		                  Learn More
+		                </a>
+		              </td>
+		            </tr>
+		          </tbody>
+		        </table>
+		        <p>
+		          <img class="imgpos_ext" alt="WordPress User Access Notification" src="<?php echo plugins_url('images/wpUserAccessNotification-logo.jpeg', __FILE__); ?>">
+		        </p>
+		      </div>
+		    </div>
+		  </div>
+		</div>
+		
+		
+		
+
+				
 		<?php
 	}
 	
@@ -386,7 +570,7 @@ class SGAntiVirus {
 			<tr class="line_4">
 			<th scope="row">Confirmation</th>
 			<td>
-	            <input name="registered" type="checkbox" id="registered" value="1"> I confirm to share this information and register my website on <a href="http://www.siteguarding.com">www.SiteGuarding.com</a>
+	            <input name="registered" type="checkbox" id="registered" value="1"> I confirm to register my website on <a href="http://www.siteguarding.com">www.SiteGuarding.com</a>
 			</td>
 			</tr>
 			
@@ -396,7 +580,7 @@ class SGAntiVirus {
 		wp_nonce_field( 'name_254f4bd3ea8d' );
 		?>			
 		<p class="submit">
-		  <input type="submit" name="submit" id="submit" class="button button-primary" value="Agree & Confirm Registration">
+		  <input type="submit" name="submit" id="submit" class="button button-primary" value="Confirm Registration">
 		</p>
 		
 		<input type="hidden" name="page" value="plgavp_Antivirus"/>
@@ -431,7 +615,12 @@ if (intval($params['scans']) == 0) {
 <?php
 }
 ?>
-	
+
+
+<div class="divTable">
+<div class="divRow">
+<div class="divCell">
+
 <p>
 Free Scans: <?php echo $params['scans']; ?><br />
 Valid till: <?php echo $params['exp_date']."&nbsp;&nbsp;"; 
@@ -440,32 +629,27 @@ if ($params['exp_date'] < date("Y-m-d", mktime(0, 0, 0, date("m")  , date("d")-7
 ?>
 </p>
 
-<p class="avp_getpro"><a href="https://www.siteguarding.com/en/buy-service/antivirus-site-protection?domain=<?php echo urlencode( get_site_url() ); ?>&email=<?php echo urlencode(get_option( 'admin_email' )); ?>" target="_blank">Get PRO version version</a></p>
-		
-<p>To start the scan process click "Start Scan" button.</p>
-<p>Scanner automatically will update its virus databases (will download the latest version of module from <a target="_blank" href="http://www.siteguarding.com">SiteGuarding.com</a>) and scan files of your website.</p>
+<p class="avp_getpro"><a href="https://www.siteguarding.com/en/buy-service/antivirus-site-protection?domain=<?php echo urlencode( get_site_url() ); ?>&email=<?php echo urlencode(get_option( 'admin_email' )); ?>" target="_blank">Get PRO version of WP Antivirus Site Protection</a></p>
 
-<p>If you would like to send us files (for detailed analyze) that has been marked as suspicious please check the "Start Scan" box.</p>
-
-<p>You will get the copy of the report by email.</p>
+<div class="mod-box"><div>		
+<p>To start the scan process click "Start Scanner" button.</p>
+<p>Scanner will automatically collect and analyze the files of your website. The scanning process can take up to 10 mins (it depends of speed of your server and amount of the files to analyze).</p>
+<p>After full analyze you will get the report. The copy of the report we will send by email for your records.</p>
 
 			<table id="settings_page">
 
 			<tr class="line_4">
-			<th scope="row">Send files</th>
+			<th scope="row">Heuristic Logic</th>
 			<td>
-				<?php
-				if (intval($params['scans']) == 0) $html_disabled = 'disabled="disabled"';
-				else $html_disabled = '';
-				?>
-	            <input <?php echo $html_disabled; ?> name="send_files" type="checkbox" id="send_files" value="1" <?php if (intval($params['send_files']) == 1) echo 'checked="checked"'; ?>> I would like to send dangerous/suspicious files to SiteGuarding support for deep analyze. (Only in PRO version)
+				<?php if (!isset($params['do_evristic'])) $params['do_evristic'] = 1; ?>
+	            <input name="do_evristic" type="checkbox" id="do_evristic" value="1" <?php if (intval($params['do_evristic']) == 1) echo 'checked="checked"'; ?>> Enable advanced heuristic logic. 
 			</td>
 			</tr>
 			
 			<tr class="line_4">
 			<th scope="row">Confirmation</th>
 			<td>
-	            <input name="allow_scan" type="checkbox" id="allow_scan" value="1" <?php if (intval($params['allow_scan']) == 1) echo 'checked="checked"'; ?>> I allow to download scanner module from <a target="_blank" href="http://www.siteguarding.com">SiteGuarding.com</a> and allow scanner to read my files.
+	            <input name="allow_scan" type="checkbox" id="allow_scan" value="1" <?php if (intval($params['allow_scan']) == 1) echo 'checked="checked"'; ?>> I allow to scan and analyze the files of my website with <a target="_blank" href="http://www.siteguarding.com">SiteGuarding.com</a> service.
 			</td>
 			</tr>
 			
@@ -481,10 +665,53 @@ if ($params['exp_date'] < date("Y-m-d", mktime(0, 0, 0, date("m")  , date("d")-7
 		<input type="hidden" name="page" value="plgavp_Antivirus"/>
 		<input type="hidden" name="action" value="StartScan"/>
 		</form>
+
+<img class="imgpos" alt="WP Antivirus Site Protection" src="<?php echo plugins_url('images/', __FILE__).'mid_box.png'; ?>" width="110" height="70">
 			
+</div></div>
 		
 		<?php self::HelpBlock(); ?>
+
+</div>
+<div class="divCell divCellReka">
+	<div class="RekaBlock">
+		<a href="https://www.siteguarding.com/en/website-extensions">
+		<img class="effect7" src="<?php echo plugins_url('images/rek1.png', __FILE__); ?>" />
+		</a>
+	</div>
 	
+	<div class="RekaBlock">
+		<a href="http://www.getbestwebdesign.com/">
+		<img class="effect7" src="<?php echo plugins_url('images/rek2.png', __FILE__); ?>" />
+		</a>
+	</div>
+	
+	<div class="RekaBlock">
+		<a href="https://www.siteguarding.com/en/prices">
+		<img class="effect7" src="<?php echo plugins_url('images/rek3.png', __FILE__); ?>" />
+		</a>
+	</div>
+	
+	<div class="RekaBlock">
+		<a href="https://www.siteguarding.com/en/sitecheck">
+		<img class="effect7" src="<?php echo plugins_url('images/rek4.png', __FILE__); ?>" />
+		</a>
+	</div>
+	
+	<div class="RekaBlock">
+		<a href="https://www.siteguarding.com/en/buy-service/antivirus-site-protection">
+		<img class="effect7" src="<?php echo plugins_url('images/rek5.png', __FILE__); ?>" />
+		</a>
+	</div>
+	
+	<div class="RekaBlock">
+		Remove these ads?<br />
+		<a href="#">Upgrade to PRO version</a>
+	</div>
+	
+</div>
+</div>
+</div>	
 		
 		<?php
 	}
@@ -510,7 +737,7 @@ if ($params['exp_date'] < date("Y-m-d", mktime(0, 0, 0, date("m")  , date("d")-7
 					    scan_path: "<?php echo $wp_path; ?>",
 						session_id: "<?php echo $session_id; ?>",
 						access_key: "<?php echo $params['access_key']; ?>",
-						send_files: "<?php echo $params['send_files']; ?>",
+						do_evristic: "<?php echo $params['do_evristic']; ?>",
 						domain: "<?php echo get_site_url(); ?>",
 						email: "<?php echo get_option( 'admin_email' ); ?>"
 					},
@@ -525,6 +752,7 @@ if ($params['exp_date'] < date("Y-m-d", mktime(0, 0, 0, date("m")  , date("d")-7
                         jQuery("#report_area").html(data);
                         jQuery("#back_bttn").show();
                         jQuery("#help_block").show();
+                        jQuery("#rek_block").hide();
 					}
 				);
 				
@@ -542,9 +770,9 @@ if ($params['exp_date'] < date("Y-m-d", mktime(0, 0, 0, date("m")  , date("d")-7
 							session_id: "<?php echo $session_id; ?>"
 						},
 						function(data){
-						    //jQuery("#progress_bar").html(data);
-						    
-						    jQuery("#progress_bar_process").css('width', parseInt(data)+'%');
+						    var tmp_data = data.split('|');
+						    jQuery("#progress_bar_txt").html(tmp_data[0]+'% - '+tmp_data[1]);
+						    jQuery("#progress_bar_process").css('width', parseInt(tmp_data[0])+'%');
 						}
 					);	
 				}
@@ -558,9 +786,19 @@ if ($params['exp_date'] < date("Y-m-d", mktime(0, 0, 0, date("m")  , date("d")-7
         
         <div id="report_area"></div>
         
-        <div id="help_block" style="display: none;"><?php self::HelpBlock(); ?></div>
+        <div id="help_block" style="display: none;">
+		
+		<a href="http://www.siteguarding.com" target="_blank">SiteGuarding.com</a> - Website Security. Professional security services against hacker activity.
+		
+		</div>
         
         <a id="back_bttn" style="display: none;" class="button button-primary" href="admin.php?page=plgavp_Antivirus">Back</a>
+        
+        <div id="rek_block">
+			<a href="https://www.siteguarding.com" target="_blank">
+				<img class="effect7" src="<?php echo plugins_url('images/rek_scan.jpg', __FILE__); ?>">
+			</a>
+		</div>
 
 
 		
@@ -568,47 +806,6 @@ if ($params['exp_date'] < date("Y-m-d", mktime(0, 0, 0, date("m")  , date("d")-7
 	}
 	
 	
-	function GetAntivirusModule($domain, $access_key)
-	{
-		$link = SITEGUARDING_SERVER.'?action=getmodule';
-		
-		$dst = fopen(__DIR__.'/tmp/module.php', 'w');
-		
-		$ch = curl_init();
-		curl_setopt($ch, CURLOPT_URL, $link );
-		
-		$post_data = base64_encode(json_encode(array(
-				'domain' => $domain,
-				'access_key' => $access_key))
-		);
-		
-		$post = array(
-			'data' => $post_data
-		);
-	
-		curl_setopt($ch, CURLOPT_POST,1);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, $post);
-		
-		curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/4.0 (compatible; MSIE 5.01; Windows NT 5.0)");
-		curl_setopt($ch, CURLOPT_TIMEOUT, 3600);
-		curl_setopt($ch, CURLOPT_TIMEOUT_MS, 3600000);
-		curl_setopt($ch, CURLOPT_FILE, $dst);
-		curl_setopt($ch, CURLOPT_FAILONERROR, true);
-		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10); 		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT_MS, 10000); 		curl_setopt($ch, CURLOPT_BINARYTRANSFER, 1);
-		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-		
-		
-		$a = curl_exec($ch);
-						
-		$info = curl_getinfo($ch);
-				
-		curl_close($ch);
-		fflush($dst);
-		fclose($dst);
-		
-		return $info['size_download'];
-	}
-
 
 
 	function GetLicenseInfo($domain, $access_key)
@@ -652,32 +849,36 @@ if ($params['exp_date'] < date("Y-m-d", mktime(0, 0, 0, date("m")  , date("d")-7
 		$error_name = array();
 		$error = 0;
 		
-				if ( !function_exists('exec') ) 
-		{
-			$error = 1;
-			$error_name[] = 'exec';
-			self::ShowMessage('Safe mode is enabled on the server.');
-		}
-		
-				if (!extension_loaded('ionCube Loader'))
-		{
-			$error = 1;
-			$error_name[] = 'ioncube';
-			self::ShowMessage('Ioncube is not installed.');
-			?>
-			IonCube loader is not installed on the server. Antivirus will not work correct. More information and how to install IonCube loaders read <a href="http://www.ioncube.com/loaders.php" target="_blank">here</a>.
-			<?php
-		}
-		
 				if (!is_writable(dirname(__FILE__).'/tmp/'))
 		{
-			$error = 1;
-			$error_name[] = 'tmp is not writable';
-			self::ShowMessage('Folder '.dirname(__FILE__).'/tmp/'.' is not writable.');
-			?>
-			Please change folder permission to 777 to make it writable.
-			<?php
+			chmod ( dirname(__FILE__).'/tmp/' , 0777 ); 
+			if (!is_writable(dirname(__FILE__).'/tmp/'))
+			{
+				$error = 1;
+				$error_name[] = 'tmp is not writable';
+				self::ShowMessage('Folder '.dirname(__FILE__).'/tmp/'.' is not writable.');
+				
+				?>
+				Please change folder <?php echo dirname(__FILE__).'/tmp/'; ?>permission to 777 to make it writable.
+				<?php
+			}
 		}
+		
+		
+				if ( !function_exists('exec') ) 
+		{
+		    if (!class_exists('ZipArchive'))
+		    {
+				$error = 1;
+				$error_name[] = 'exec & ZipArchive';
+				self::ShowMessage('ZipArchive class is not installed on your server.');
+				
+				?>
+				Please ask your hoster support to install or enable PHP ZipArchive class for your server. More information about ZipArchive class please read here <a href="http://bd1.php.net/manual/en/class.ziparchive.php" target="_blank">http://bd1.php.net/manual/en/class.ziparchive.php</a>
+				<?php
+			}
+		}
+		
 		
 		if ($return_error_names) return json_encode($error_name);
 		if ($error == 1) return false;

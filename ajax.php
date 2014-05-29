@@ -1,6 +1,6 @@
 <?php
 
-include_once(__DIR__.'/tmp/module.php');
+include_once(dirname(__FILE__).'/sgantivirus.class.php');
 
 $action = $_REQUEST['action'];
 
