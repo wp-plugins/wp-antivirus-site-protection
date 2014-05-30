@@ -26,9 +26,7 @@ It detects: backdoors, rootkits, trojan horses, worms, fraudtools, adware and sp
 * Whitelist solution after manual review.
 * Possibility to upload suspicious files to www.siteguarding.com server for review by experts.
 
-Please note: Plugin sends and receives the data to SiteGuarding.com API.
-
-> Protect your website before the problems come.
+> Protect your website before the problems come. Monitor your website and inimize incident time with our automated scans.
 
 WP Antivirus Site Protection plugin is a great solution for all website owners. It was developed by our engineers who has a many years experience in website security. Our plugin intelligently crawl your website and identify all possible infections and backdoors on your website. Every day we update database and add new logics and function (Heuristic Logic feature) to keep your website safe.
 
@@ -65,6 +63,8 @@ and confirmation (nothing will be sent to SiteGuarding server without your permi
 them. Information about the files with suspicious codes will be sent to SiteGuarding server for extra analyze 
 and for report generation. Generated report will be sent back to you (the copy of the report you will get by 
 email)   
+
+Please note: Plugin sends and receives the data to SiteGuarding.com API.
 
 == Installation ==
 
