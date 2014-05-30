@@ -570,7 +570,7 @@ class SGAntiVirus {
 			<tr class="line_4">
 			<th scope="row">Confirmation</th>
 			<td>
-	            <input name="registered" type="checkbox" id="registered" value="1"> I confirm to register my website on <a href="http://www.siteguarding.com">www.SiteGuarding.com</a>
+	            <input name="registered" type="checkbox" id="registered" value="1"> I confirm the registration of my website on <a href="http://www.siteguarding.com">www.SiteGuarding.com</a> and agree to analyze my website.
 			</td>
 			</tr>
 			
@@ -646,13 +646,6 @@ if ($params['exp_date'] < date("Y-m-d", mktime(0, 0, 0, date("m")  , date("d")-7
 			</td>
 			</tr>
 			
-			<tr class="line_4">
-			<th scope="row">Confirmation</th>
-			<td>
-	            <input name="allow_scan" type="checkbox" id="allow_scan" value="1" <?php if (intval($params['allow_scan']) == 1) echo 'checked="checked"'; ?>> I allow to scan and analyze the files of my website with <a target="_blank" href="http://www.siteguarding.com">SiteGuarding.com</a> service.
-			</td>
-			</tr>
-			
 			</table>
 			
 		<?php
@@ -662,6 +655,7 @@ if ($params['exp_date'] < date("Y-m-d", mktime(0, 0, 0, date("m")  , date("d")-7
 		  <input type="submit" name="submit" id="submit" class="button button-primary" value="Start Scanner">
 		</p>
 		
+		<input name="allow_scan" type="hidden" id="allow_scan" value="1">
 		<input type="hidden" name="page" value="plgavp_Antivirus"/>
 		<input type="hidden" name="action" value="StartScan"/>
 		</form>
