@@ -33,6 +33,7 @@ Please note: Plugin sends and receives the data to SiteGuarding.com API.
 WP Antivirus Site Protection plugin is a great solution for all website owners. It was developed by our engineers who has a many years experience in website security. Our plugin intelligently crawl your website and identify all possible infections and backdoors on your website. Every day we update database and add new logics and function (Heuristic Logic feature) to keep your website safe.
 
 **Here is the list of malware types what our scanner can detect:**
+
 * MySQL and JavaScript injections (There is a lot of different attacks on your website but the most popular type and the easiest is probably MySQL injection. Our scanner will help you detect all possible issues with JavaScript and MySQL)
 * Website Defacements (When hackers break in to your website they can change the appearance of your website or a webpage. We have set up a feature that can help you prevent any changes on your website)
 * Hidden iFrames (If hacker gets an access to your website Ftp they usually set up a hidden iFrame. That way they can use your website to get the viruses on your visitors computers)
