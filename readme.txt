@@ -33,23 +33,23 @@ WP Antivirus Site Protection plugin is a great solution for all website owners. 
 **Here is the list of malware types what our scanner can detect:**
 
 * **MySQL and JavaScript injections** (There is a lot of different attacks on your website but the most popular type and the easiest is probably MySQL injection. Our scanner will help you detect all possible issues with JavaScript and MySQL)
-* Website Defacements (When hackers break in to your website they can change the appearance of your website or a webpage. We have set up a feature that can help you prevent any changes on your website)
-* Hidden iFrames (If hacker gets an access to your website Ftp they usually set up a hidden iFrame. That way they can use your website to get the viruses on your visitors computers)
-* PHP Mailers (Sometimes hackers use your website to send a SPAM emails from your web server. Our smart scanning module was made to detect all possible PHP mailing scripts on your website and prevent your website from sending SPAM)
-* Social Engineering Attacks (There are a lot of social engineering methods to get an access to your website. Our scanning software will help you to protect your website)
-* Phishing Page Detection (Hackers can install a phishing page on your website without you knowing it. Sometimes they can use your website)
-* Redirects
-* Website Backdoors (Allow to get full control on website and server)
-* Website Anomalies
-* Drive-by-Downloads
-* Cross Site Scripting (XSS)
-* .htaccess (Hack Detection)
-* Different rootkits
-* Trojan horses
-* Internet worms
-* Fraudtools
-* Adware and spyware scrips 
-* and much more...
+* **Website Defacements** (When hackers break in to your website they can change the appearance of your website or a webpage. We have set up a feature that can help you prevent any changes on your website)
+* **Hidden iFrames** (If hacker gets an access to your website Ftp they usually set up a hidden iFrame. That way they can use your website to get the viruses on your visitors computers)
+* **PHP Mailers** (Sometimes hackers use your website to send a SPAM emails from your web server. Our smart scanning module was made to detect all possible PHP mailing scripts on your website and prevent your website from sending SPAM)
+* **Social Engineering Attacks** (There are a lot of social engineering methods to get an access to your website. Our scanning software will help you to protect your website)
+* **Phishing Page Detection** (Hackers can install a phishing page on your website without you knowing it. Sometimes they can use your website)
+* **Redirects**
+* **Website Backdoors** (Allow to get full control on website and server)
+* **Website Anomalies**
+* **Drive-by-Downloads**
+* **Cross Site Scripting** (XSS)
+* **.htaccess** (Hack Detection)
+* **Rootkits** and variants of this type of malware
+* **Trojan horses**
+* **Internet worms**
+* **Fraudtools**
+* **Adware** and **spyware** scrips 
+and much more...
 
 
 **How it works:**
