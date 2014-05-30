@@ -596,17 +596,7 @@ class SGAntiVirus {
 	function page_PreScan($params)
 	{
 		?>
-		<script>
-		function form_ConfirmRegistration(form)
-		{
-			if ( jQuery('#allow_scan').is(':checked') ) return true;
-			else {
-				alert('Confirmation is not checked.');	
-				return false;
-			}
-		}
-		</script>
-		<form method="post" action="admin.php?page=plgavp_Antivirus" onsubmit="return form_ConfirmRegistration(this);">
+		<form method="post" action="admin.php?page=plgavp_Antivirus">
 
 <?php
 if (intval($params['scans']) == 0) {
