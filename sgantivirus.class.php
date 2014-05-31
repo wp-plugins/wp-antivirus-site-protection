@@ -1,12 +1,8 @@
 <?php
-/**
- * Antivirus Module
- * ver.: 1.0
- * date: 26 May 2014
- */
+
 class SGAntiVirus_module
 {
-	static $debug = false;
+	static $debug = true;
 	
 	static $SITEGUARDING_SERVER = 'https://www.siteguarding.com/ext/antivirus/index.php';
 	
@@ -254,10 +250,10 @@ class SGAntiVirus_module
 
 
 
-	function SendEmail($email, $result)
+	function SendEmail($email, $result, $subject = '')
 	{
 		$to  = $email; 		
-				$subject = 'AntiVirus Report ['.date("Y-m-d H:i:s").']';
+				if ($subject == '') $subject = 'AntiVirus Report ['.date("Y-m-d H:i:s").']';
 		
 		        $body_message = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">

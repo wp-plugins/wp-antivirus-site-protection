@@ -3,16 +3,13 @@
 Plugin Name: WP Antivirus Site Protection (by SiteGuarding.com)
 Plugin URI: http://www.siteguarding.com/en/website-extensions
 Description: Adds more security for your WordPress website. Server-side scanning. Performs deep website scans of all the files. Virus and Malware detection.
-Version: 2.0.1
+Version: 2.0.2
 Author: SiteGuarding.com (SafetyBis Ltd.)
 Author URI: http://www.siteguarding.com
 License: GPLv2
 TextDomain: plgavp
 */
-define( 'WPAVP_SVN', false);
-
 define( 'SITEGUARDING_SERVER', 'https://www.siteguarding.com/ext/antivirus/index.php');
-
 
 error_reporting(E_ERROR);
 
@@ -80,6 +77,21 @@ if( is_admin() ) {
 
 	function plgavp_settings_page_callback() 
 	{
+				if (!file_exists(dirname(__FILE__).'/sgantivirus.class.php'))
+		{
+						SGAntiVirus::ShowMessage('File '.dirname(__FILE__).'/sgantivirus.class.php is not exist.');
+			return;
+		}
+		
+		include_once(dirname(__FILE__).'/sgantivirus.class.php');
+		
+		if (!class_exists('SGAntiVirus_module'))
+		{
+						SGAntiVirus::ShowMessage('Main antivirus scanner module is not loaded. Please try again.');
+			return;
+		}
+		
+		
 		wp_enqueue_style( 'plgavp_LoadStyle' );
 		
 		?>
@@ -91,13 +103,23 @@ if( is_admin() ) {
 						if (isset($_POST['action']) && $_POST['action'] == 'ConfirmRegistration' && check_admin_referer( 'name_254f4bd3ea8d' ))
 		{
 			$errors = SGAntiVirus::checkServerSettings(true);
-			$access_key = md5(time.get_site_url());
+			$access_key = md5(time().get_site_url());
 			$email = trim($_POST['email']);
 			$result = SGAntiVirus::sendRegistration(get_site_url(), $email, $access_key, $errors);
 			if ($result === true)
 			{
 				$data = array('registered' => 1, 'email' => $email, 'access_key' => $access_key);
 				plgwpavp_SetExtraParams($data);
+				
+								$message = 'Dear Customer!'."<br><br>";
+				$message .= 'Thank you for registration your copy of WP Antivirus Site Protection. Please keep this email for your records, it contains your registration information and you will need it in the future.'."<br><br>";
+				$message .= '<b>Registration information:</b>'."<br><br>";
+				$message .= '<b>Domain:</b> '.get_site_url()."<br>";
+				$message .= '<b>Email:</b> '.$email."<br>";
+				$message .= '<b>Access Key:</b> '.$access_key."<br><br>";
+				$subject = 'AntiVirus Registration Information';
+				
+				SGAntiVirus_module::SendEmail($email, $message, $subject);
 			}
 			else {
 								SGAntiVirus::ShowMessage($result);
@@ -111,20 +133,6 @@ if( is_admin() ) {
 			plgwpavp_SetExtraParams($data);
 			
 			$params = plgwpavp_GetExtraParams();
-			
-			if (!file_exists(dirname(__FILE__).'/sgantivirus.class.php'))
-			{
-								SGAntiVirus::ShowMessage('File '.dirname(__FILE__).'/sgantivirus.class.php is not exist.');
-				return;
-			}
-			
-			include_once(dirname(__FILE__).'/sgantivirus.class.php');
-			
-			if (!class_exists('SGAntiVirus_module'))
-			{
-								SGAntiVirus::ShowMessage('Main antivirus scanner module is not loaded. Please try again.');
-				return;
-			}
 			
 			
 			$session_id = md5(time().'-'.rand(1,10000));
@@ -444,8 +452,18 @@ wp_nonce_field( 'name_AFAD78D85E01' );
             
 
 			require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
-			dbDelta( $sql );             
-            if (!WPAGP_SVN) wpagp_NotityDeveloper();
+			dbDelta( $sql );  
+			           
+   			// Notify user
+   			include_once(dirname(__FILE__).'/sgantivirus.class.php');
+            $message = 'Dear Customer!'."<br><br>";
+			$message .= 'Thank you for installation of our security plugin. We will do the best to keep your website safe and secured.'."<br><br>";
+			$message .= 'One more step to secure your website. Please login to Dashboard of your WordPress website. Find in menu "Antivirus", follow the instructions.'."<br><br>";
+			$message .= 'Please visit <a href="https://www.siteguarding.com/en/website-extensions">SiteGuarding.com Extentions<a> and learn more about our security solutions.'."<br><br>";
+			$subject = 'Antivirus Installation';
+			$email = get_option( 'admin_email' );
+			
+			SGAntiVirus_module::SendEmail($email, $message, $subject);
 		}
 	}
 	register_activation_hook( __FILE__, 'plgwpavp_activation' );
@@ -547,7 +565,7 @@ class SGAntiVirus {
 		
 			<h3>Registration</h3>
 			
-			<p>If you are using this plugin the first time you need to register your website on <a href="http://www.siteguarding.com">www.SiteGuarding.com</a>.<br>Click the button "Agree & Confirm Registration" to complete registration process.</p>
+			<p>Click "Confirm Registration" button to complete registration process. Your website will be automatically registered on <a href="http://www.siteguarding.com">www.SiteGuarding.com</a>.<br></p>
 			
 			<p>Already registered? Go to <a href="admin.php?page=plgavp_Antivirus_settings_page">Antivirus Settings</a> page and enter your Access Key.</p>
 		
@@ -570,7 +588,7 @@ class SGAntiVirus {
 			<tr class="line_4">
 			<th scope="row">Confirmation</th>
 			<td>
-	            <input name="registered" type="checkbox" id="registered" value="1"> I confirm the registration of my website on <a href="http://www.siteguarding.com">www.SiteGuarding.com</a> and agree to analyze my website.
+	            <input name="registered" type="checkbox" id="registered" value="1"> I confirm to register my website on <a href="http://www.siteguarding.com">www.SiteGuarding.com</a>
 			</td>
 			</tr>
 			
