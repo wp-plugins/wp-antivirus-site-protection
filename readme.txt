@@ -4,7 +4,7 @@ Donate link: https://www.siteguarding.com/en/website-extensions
 Tags: antivirus, malware, virus, scanner, security, block, blocked, attack, hack, hacker, hacking, protection, website security, scan, malware removal, virus detection
 Requires at least: 3.0
 Tested up to: 3.9 
-Stable tag: 2.0
+Stable tag: 2.0.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -19,12 +19,38 @@ It detects: backdoors, rootkits, trojan horses, worms, fraudtools, adware and sp
 
 * Deep scan of every file on your website.
 * Daily update of the virus database.
+* Heuristic Logic feature.
 * Alerts and Notifications in admin area and by email.
 * Daily cron feature.
+* Scanner can detect a wide list of malware types.
 * Whitelist solution after manual review.
 * Possibility to upload suspicious files to www.siteguarding.com server for review by experts.
 
-Please note: Plugin sends and receives the data to SiteGuarding.com API.
+> Protect your website before the problems come. Monitor your website and minimize incident time with our automated scans.
+
+WP Antivirus Site Protection plugin is a great solution for all website owners. It was developed by our engineers who has a many years experience in website security. Our plugin intelligently crawl your website and identify all possible infections and backdoors on your website. Every day we update database and add new logics and function (Heuristic Logic feature) to keep your website safe.
+
+**Here is the list of malware types what our scanner can detect:**
+
+* **MySQL and JavaScript injections** (There is a lot of different attacks on your website but the most popular type and the easiest is probably MySQL injection. Our scanner will help you detect all possible issues with JavaScript and MySQL)
+* **Website Defacements** (When hackers break in to your website they can change the appearance of your website or a webpage. We have set up a feature that can help you prevent any changes on your website)
+* **Hidden iFrames** (If hacker gets an access to your website Ftp they usually set up a hidden iFrame. That way they can use your website to get the viruses on your visitors computers)
+* **PHP Mailers** (Sometimes hackers use your website to send a SPAM emails from your web server. Our smart scanning module was made to detect all possible PHP mailing scripts on your website and prevent your website from sending SPAM)
+* **Social Engineering Attacks** (There are a lot of social engineering methods to get an access to your website. Our scanning software will help you to protect your website)
+* **Phishing Page Detection** (Hackers can install a phishing page on your website without you knowing it. Sometimes they can use your website)
+* **Redirects**
+* **Website Backdoors** (Allow to get full control on website and server)
+* **Website Anomalies**
+* **Drive-by-Downloads**
+* **Cross Site Scripting** (XSS)
+* **.htaccess** (Hack Detection)
+* **Rootkits** and variants of this type of malware
+* **Trojan horses**
+* **Internet worms**
+* **Fraudtools**
+* **Adware** and **spyware** scrips 
+and much more...
+
 
 **How it works:**
 
@@ -33,15 +59,12 @@ Plugins sends information about your website (domain and email) to SiteGuarding 
 registration your website will get uniq access key. Please note: This action requires your permission 
 and confirmation (nothing will be sent to SiteGuarding server without your permission).  
 
-2) Preparation for scanning process. On this stage you need to confirm that you allow to scan and analyze
-the files of your website. Note: Plugin DOES NOT delete or  modify the files. It just READS them and looking 
-for suspicious codes in the files. Please note: This action requires your permission 
-and confirmation (nothing will be downloaded and sent to SiteGuarding server without your permission). 
-
-3) Scan process. During the scanning process, plugin will read all the files of your website and will analyze 
+2) Scan process. During the scanning process, plugin will read all the files of your website and will analyze 
 them. Information about the files with suspicious codes will be sent to SiteGuarding server for extra analyze 
 and for report generation. Generated report will be sent back to you (the copy of the report you will get by 
 email)   
+
+Please note: Plugin sends and receives the data to SiteGuarding.com API.
 
 == Installation ==
 
