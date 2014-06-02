@@ -3,7 +3,7 @@
 Plugin Name: WP Antivirus Site Protection (by SiteGuarding.com)
 Plugin URI: http://www.siteguarding.com/en/website-extensions
 Description: Adds more security for your WordPress website. Server-side scanning. Performs deep website scans of all the files. Virus and Malware detection.
-Version: 2.0.2
+Version: 2.1
 Author: SiteGuarding.com (SafetyBis Ltd.)
 Author URI: http://www.siteguarding.com
 License: GPLv2
@@ -454,8 +454,7 @@ wp_nonce_field( 'name_AFAD78D85E01' );
 			require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
 			dbDelta( $sql );  
 			           
-   			// Notify user
-   			include_once(dirname(__FILE__).'/sgantivirus.class.php');
+   			   			include_once(dirname(__FILE__).'/sgantivirus.class.php');
             $message = 'Dear Customer!'."<br><br>";
 			$message .= 'Thank you for installation of our security plugin. We will do the best to keep your website safe and secured.'."<br><br>";
 			$message .= 'One more step to secure your website. Please login to Dashboard of your WordPress website. Find in menu "Antivirus", follow the instructions.'."<br><br>";
@@ -638,6 +637,35 @@ if ($params['exp_date'] < date("Y-m-d", mktime(0, 0, 0, date("m")  , date("d")-7
 </p>
 
 <p class="avp_getpro"><a href="https://www.siteguarding.com/en/buy-service/antivirus-site-protection?domain=<?php echo urlencode( get_site_url() ); ?>&email=<?php echo urlencode(get_option( 'admin_email' )); ?>" target="_blank">Get PRO version of WP Antivirus Site Protection</a></p>
+
+
+<div class="mod-box"><div>
+<h3>Latest Reports</h3>	
+<?php
+$reports = $params['reports'];
+if (count($reports)) {
+	?>
+	<p>
+	<?php
+		foreach ($reports as $report_info) {
+	?>
+			<a href="<?php echo $report_info->report_link; ?>" target="_blank">Click to view report for <?php echo $report_info->domain; ?>. Date: <?php echo $report_info->date; ?></a><br />
+	<?php
+		}
+	?>
+	</p>
+	<?php
+} else {
+?>
+	<p>You don't have any available report yet. Please scan your website.</p>
+<?php
+}
+?>
+
+<img class="imgpos" alt="WP Antivirus Site Protection" src="<?php echo plugins_url('images/', __FILE__).'left_box.png'; ?>" width="110" height="70">
+			
+</div></div>
+
 
 <div class="mod-box"><div>		
 <p>To start the scan process click "Start Scanner" button.</p>

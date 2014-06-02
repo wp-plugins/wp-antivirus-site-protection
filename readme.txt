@@ -4,7 +4,7 @@ Donate link: https://www.siteguarding.com/en/website-extensions
 Tags: antivirus, malware, virus, scanner, security, block, blocked, attack, hack, hacker, hacking, protection, website security, scan, malware removal, virus detection
 Requires at least: 3.0
 Tested up to: 3.9 
-Stable tag: 2.0.2
+Stable tag: 2.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -25,6 +25,7 @@ It detects: backdoors, rootkits, trojan horses, worms, fraudtools, adware and sp
 * Scanner can detect a wide list of malware types.
 * Whitelist solution after manual review.
 * Possibility to upload suspicious files to www.siteguarding.com server for review by experts.
+* View Security reports online
 
 > Protect your website before the problems come. Monitor your website and minimize incident time with our automated scans.
 
@@ -97,6 +98,7 @@ A: If you have PRO version of WP Antivirus Site Protection, you can contact us a
 2. Scanner process in progress.
 3. Successful report (no suspicious codes in the files).
 4. Scanner has found suspicious codes.
+5. View report online.
 
 == Changelog ==
 

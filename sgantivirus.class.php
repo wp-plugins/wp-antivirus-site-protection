@@ -97,7 +97,8 @@ class SGAntiVirus_module
 						{
 			                if( strstr(realpath($key), "stark") == FALSE) 
 							{
-			                	$s = $zip->addFile(realpath($key), $key);
+								$short_key = str_replace($scan_path, "", $key);
+			                	$s = $zip->addFile(realpath($key), $short_key);
 				                if (!$s) 
 				                {
 				                    				                    				                }
