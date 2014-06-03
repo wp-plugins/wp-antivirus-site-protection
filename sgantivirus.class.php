@@ -1,5 +1,4 @@
 <?php
-
 class SGAntiVirus_module
 {
 	static $debug = true;
