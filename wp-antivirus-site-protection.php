@@ -134,6 +134,14 @@ if( is_admin() ) {
 			
 			$params = plgwpavp_GetExtraParams();
 			
+						$progress_info = SGAntiVirus::GetProgressInfo(get_site_url(), $params['access_key']);
+			if ($progress_info['in_progress'] > 0)
+			{
+				$msg = 'Another scanning process is in progress. In 5-10 minutes you will get report by email or it will be available in Latest Reports section.';
+				SGAntiVirus::ShowMessage($msg);
+				return;
+			} 
+			
 			
 			$session_id = md5(time().'-'.rand(1,10000));
 			ob_start();
@@ -452,9 +460,8 @@ wp_nonce_field( 'name_AFAD78D85E01' );
             
 
 			require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
-			dbDelta( $sql );  
-			           
-   			   			include_once(dirname(__FILE__).'/sgantivirus.class.php');
+			dbDelta( $sql );             
+               			include_once(dirname(__FILE__).'/sgantivirus.class.php');
             $message = 'Dear Customer!'."<br><br>";
 			$message .= 'Thank you for installation of our security plugin. We will do the best to keep your website safe and secured.'."<br><br>";
 			$message .= 'One more step to secure your website. Please login to Dashboard of your WordPress website. Find in menu "Antivirus", follow the instructions.'."<br><br>";
@@ -854,6 +861,24 @@ if (count($reports)) {
 	    
 	    return (array)json_decode($msg);
 	}
+	
+	
+	function GetProgressInfo($domain, $access_key)
+	{
+		$link = SITEGUARDING_SERVER.'?action=progressinfo&type=json&data=';
+		
+	    $data = array(
+			'domain' => $domain,
+			'access_key' => $access_key
+		);
+	    $link .= base64_encode(json_encode($data));
+	    $msg = file_get_contents($link);
+	    
+	    $msg = trim($msg);
+	    if ($msg == '') return false;
+	    
+	    return (array)json_decode($msg, true);
+	}
 
 	
 	function sendRegistration($domain, $email, $access_key = '', $errors = '')
@@ -927,8 +952,12 @@ if (count($reports)) {
 		<h3 class="avp_header icon_contacts">Support</h3>
 		
 		<p>
-		For more information and details about Antivirus Site Protection please <a target="_blank" href="https://www.siteguarding.com/en/antivirus-site-protection">click here</a>.<br />
-		For any questions and support please contact <a href="https://www.siteguarding.com/en/contacts" rel="nofollow" target="_blank" title="SiteGuarding.com">SiteGuarding.com contact form</a>.<br />
+		For more information and details about Antivirus Site Protection please <a target="_blank" href="https://www.siteguarding.com/en/antivirus-site-protection">click here</a>.<br /><br />
+		<a href="http://www.siteguarding.com/livechat/index.html" target="_blank">
+			<img src="<?php echo plugins_url('images/livechat.png', __FILE__); ?>"/>
+		</a><br />
+		For any questions and support please use LiveChat or this <a href="https://www.siteguarding.com/en/contacts" rel="nofollow" target="_blank" title="SiteGuarding.com - Website Security. Professional security services against hacker activity. Daily website file scanning and file changes monitoring. Malware detecting and removal.">contact form</a>.<br>
+		<br>
 		<a href="https://www.siteguarding.com/" target="_blank">SiteGuarding.com</a> - Website Security. Professional security services against hacker activity.<br />
 		</p>
 		<?php
