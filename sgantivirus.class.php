@@ -1,7 +1,8 @@
 <?php
+
 class SGAntiVirus_module
 {
-	static $debug = true;
+	static $debug = false;
 	
 	static $SITEGUARDING_SERVER = 'https://www.siteguarding.com/ext/antivirus/index.php';
 	

@@ -3,7 +3,7 @@
 Plugin Name: WP Antivirus Site Protection (by SiteGuarding.com)
 Plugin URI: http://www.siteguarding.com/en/website-extensions
 Description: Adds more security for your WordPress website. Server-side scanning. Performs deep website scans of all the files. Virus and Malware detection.
-Version: 2.1
+Version: 2.1.1
 Author: SiteGuarding.com (SafetyBis Ltd.)
 Author URI: http://www.siteguarding.com
 License: GPLv2
@@ -24,18 +24,6 @@ if( !is_admin() ) {
 	
 		if ($params['access_key'] == $access_key)
 		{
-								if ( !isset($params['last_scan_date']) || $params['last_scan_date'] < date("Y-m-d"))
-				{
-	
-										$domain = get_site_url();
-					$access_key = $params['access_key'];
-	
-					SGAntiVirus::GetAntivirusModule($domain, $access_key);
-	
-					$data = array('last_scan_date' => date("Y-m-d"));
-					plgwpavp_SetExtraParams($data);
-				}	
-				
 				include_once(dirname(__FILE__).'/sgantivirus.class.php');
 				
 				if (!class_exists('SGAntiVirus_module'))
@@ -619,6 +607,13 @@ class SGAntiVirus {
 	
 	function page_PreScan($params)
 	{
+		
+		if (intval($params['scans']) == 30)
+		{
+			$txt = 'Congratulation. One more step to protect your website. Click START SCANNER button and get your security report.';
+			self::ShowMessage($txt);
+		}
+	 
 		?>
 		<form method="post" action="admin.php?page=plgavp_Antivirus">
 
@@ -743,7 +738,7 @@ if (count($reports)) {
 	
 	<div class="RekaBlock">
 		Remove these ads?<br />
-		<a href="#">Upgrade to PRO version</a>
+		<a href="https://www.siteguarding.com/en/buy-service/antivirus-site-protection">Upgrade to PRO version</a>
 	</div>
 	
 </div>
