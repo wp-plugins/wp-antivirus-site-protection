@@ -19,7 +19,8 @@
 .msg_info {color: #00529B;background-color: #BDE5F8;}
 .msg_icon{padding-left:55px;background-position: 10px 50%;width:50%}
 #help_block{background-color: #FFF;border: 1px solid #222;font-size: 15px;font-weight: bold;margin-bottom: 20px;max-width: 750px;padding: 20px;}
-p.submit #submit{font-size:20px; line-height: 36px; height: 38px;}
+p.submit #submit{font-size:25px;padding:25px; line-height: 36px; height: 38px;}
+p.submit{text-align: center!important;}
 
 .mod-box {
 	border: 1px solid #d2d2d2;
