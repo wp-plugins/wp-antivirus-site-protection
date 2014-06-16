@@ -3,7 +3,7 @@
 Plugin Name: WP Antivirus Site Protection (by SiteGuarding.com)
 Plugin URI: http://www.siteguarding.com/en/website-extensions
 Description: Adds more security for your WordPress website. Server-side scanning. Performs deep website scans of all the files. Virus and Malware detection.
-Version: 2.1.1
+Version: 2.1.2
 Author: SiteGuarding.com (SafetyBis Ltd.)
 Author URI: http://www.siteguarding.com
 License: GPLv2
@@ -11,12 +11,10 @@ TextDomain: plgavp
 */
 define( 'SITEGUARDING_SERVER', 'https://www.siteguarding.com/ext/antivirus/index.php');
 
-error_reporting(E_ERROR);
-
 if( !is_admin() ) {
 	if ( isset($_GET['task']) && $_GET['task'] == 'cron' )
 	{
-		error_reporting(E_ERROR);
+		error_reporting(0);
 		
 		$access_key = trim($_GET['access_key']);
 	
@@ -48,6 +46,8 @@ if( !is_admin() ) {
 
 
 if( is_admin() ) {
+	
+	error_reporting(0);
     
 	add_action( 'admin_init', 'plgavp_admin_init' );
 	function plgavp_admin_init()
