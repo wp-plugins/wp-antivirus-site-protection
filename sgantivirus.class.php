@@ -2,12 +2,12 @@
 
 class SGAntiVirus_module
 {
-	static $debug = false;
+	public static $debug = false;
 	
-	static $SITEGUARDING_SERVER = 'https://www.siteguarding.com/ext/antivirus/index.php';
+	public static $SITEGUARDING_SERVER = 'https://www.siteguarding.com/ext/antivirus/index.php';
 	
 
-	function UpdateProgressValue($current_task, $total_tasks, $current_step_txt)
+	public static function UpdateProgressValue($current_task, $total_tasks, $current_step_txt)
 	{
 		$i = round( 100*$current_task/$total_tasks, 2 );
 		
@@ -20,7 +20,7 @@ class SGAntiVirus_module
 	}
 	
 	
-	function scan($check_session = true, $show_results = true)
+	public static function scan($check_session = true, $show_results = true)
 	{
 
 		set_time_limit ( 3600 );
@@ -212,7 +212,7 @@ class SGAntiVirus_module
 
 
 	
-	function readProgress()
+	public static function readProgress()
 	{
 		session_start();
 		$val = floatval($_SESSION['scan']['progress']);
@@ -227,7 +227,7 @@ class SGAntiVirus_module
 	}
 	
 	
-	function UploadSingleFile($file, $action, $post_data)
+	public static function UploadSingleFile($file, $action, $post_data)
 	{
 		$target_url = self::$SITEGUARDING_SERVER.'?action='.$action;
 	        		$file_name_with_full_path = $file;
@@ -251,7 +251,7 @@ class SGAntiVirus_module
 
 
 
-	function SendEmail($email, $result, $subject = '')
+	public static function SendEmail($email, $result, $subject = '')
 	{
 		$to  = $email; 		
 				if ($subject == '') $subject = 'AntiVirus Report ['.date("Y-m-d H:i:s").']';
@@ -398,7 +398,7 @@ class SGAntiVirus_module
 	
 	
 	
-	function DebugLog($txt)
+	public static function DebugLog($txt)
 	{
 		$fp = fopen(dirname(__FILE__).'/debug.log', 'a');
 		$a = date("Y-m-d H:i:s")." ".$txt."\n";
