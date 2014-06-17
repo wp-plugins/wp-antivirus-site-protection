@@ -689,7 +689,7 @@ if (count($reports)) {
 		<?php
 		wp_nonce_field( 'name_254f4bd3ea8d' );
 		?>			
-		<p class="submit">
+		<p class="submit startscanner">
 		  <input type="submit" name="submit" id="submit" class="button button-primary" value="Start Scanner">
 		</p>
 		
