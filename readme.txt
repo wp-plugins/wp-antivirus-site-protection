@@ -12,8 +12,11 @@ Adds more security for your website. Server-side scanning. Performs deep website
 
 == Description ==
 
-WP Antivirus Site Protection is the security plugin to prevent/detect and remove malicious computer viruses. 
-It detects: backdoors, rootkits, trojan horses, worms, fraudtools, adware and spyware and etc.
+WP Antivirus Site Protection is the security plugin to prevent/detect and remove malicious viruses and suspicious codes. 
+It detects: backdoors, rootkits, trojan horses, worms, fraudtools, adware, spyware and etc.
+WP Antivirus Site Protection scans not only theme files, it scans and analyzes all the files of your WordPress website (theme files, all the files of the plugins, files in upload folder and etc).
+
+> This plugin will be especially useful for everybody who downloads WP themes and plugins from torrents and websites with free stuff instead of purchase the original copies from the developers. You will be shocked, how many free gifts they have inside :) 
 
 **Main features:**
 
