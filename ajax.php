@@ -2,6 +2,8 @@
 
 include_once(dirname(__FILE__).'/sgantivirus.class.php');
 
+error_reporting(0);
+
 $action = $_REQUEST['action'];
 
 switch ($action)
