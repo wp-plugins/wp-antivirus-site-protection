@@ -1,10 +1,10 @@
 === Plugin Name ===
 Contributors: SiteGuarding
 Donate link: https://www.siteguarding.com/en/website-extensions
-Tags: antivirus, malware, virus, scanner, security, block, blocked, attack, hack, hacker, hacking, protection, website security, scan, malware removal, virus detection
+Tags: antivirus, malware, virus, scanner, security, block, backdoor, attack, hack, hacker, hacking, protection, website security, scan, malware removal, virus detection
 Requires at least: 3.0
 Tested up to: 3.9 
-Stable tag: 2.1.3
+Stable tag: 2.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -32,7 +32,7 @@ WP Antivirus Site Protection scans not only theme files, it scans and analyzes a
 
 > Protect your website before the problems come. Monitor your website and minimize incident time with our automated scans.
 
-WP Antivirus Site Protection plugin is a great solution for all website owners. It was developed by our engineers who has a many years experience in website security. Our plugin intelligently crawl your website and identify all possible infections and backdoors on your website. Every day we update database and add new logics and function (Heuristic Logic feature) to keep your website safe.
+WP Antivirus Site Protection plugin is a great solution for all website owners. It was developed by our engineers who has a many years experience in website security. Our plugin intelligently crawl your website and identify all possible infections and backdoors on your website. Every day we update database and add new logics and functions (Heuristic Logic feature) to keep your website safe.
 
 **Here is the list of malware types what our scanner can detect:**
 

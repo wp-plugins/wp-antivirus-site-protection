@@ -2,7 +2,7 @@
 
 class SGAntiVirus_module
 {
-	public static $debug = false;
+	public static  $debug = false;
 	
 	public static $SITEGUARDING_SERVER = 'https://www.siteguarding.com/ext/antivirus/index.php';
 	
@@ -139,7 +139,7 @@ class SGAntiVirus_module
 		if (self::$debug) self::DebugLog($error_msg);
 		
 		$tar_size = filesize($archive_filename);
-		if ($tar_size < 16 * 1024 * 1024)
+		if ($tar_size < 32 * 1024 * 1024)
 		{
 						$post_data = base64_encode(json_encode(array(
 					'domain' => $domain,
@@ -150,8 +150,25 @@ class SGAntiVirus_module
 					'archive_format' => $archive_format))
 			);
 
-			self::UploadSingleFile($archive_filename, 'uploadfiles_ver2', $post_data);
+			$result = self::UploadSingleFile($archive_filename, 'uploadfiles_ver2', $post_data);
+			if ($result === false)
+			{
+				$error_msg = 'Can not upload pack file for analyze';
+				if (self::$debug) self::DebugLog($error_msg);
+				echo $error_msg;
+				exit;
+			}
+			else {
+				$error_msg = 'Pack file sent for analyze - OK';
+				if (self::$debug) self::DebugLog($error_msg);
+			}
 			
+		}
+		else {
+			$error_msg = 'Pack file is too big, please contact SiteGuarding.com support';
+			if (self::$debug) self::DebugLog($error_msg);
+			echo $error_msg;
+			exit;
 		}
 				$current_task += 1;
 		self::UpdateProgressValue($current_task, $total_tasks, 'Analyzing the files. Preparing the report.');
@@ -175,7 +192,17 @@ class SGAntiVirus_module
 			);
 	
 			$result_json = $HTTPClient->post(self::$SITEGUARDING_SERVER.'?action=getreport_ver2', $post_data);
+			if ($result_json === false) 
+			{
+				$error_msg = 'Report can not be generated. Please try again or contact support';
+				if (self::$debug) self::DebugLog($error_msg);
+				echo $error_msg;
+				exit;
+			}
+			
 			$result_json = (array)json_decode($result_json, true);
+
+			
 			if ($result_json['status'] == 'ready') 
 			{
 				echo $result_json['text'];
@@ -217,7 +244,7 @@ class SGAntiVirus_module
 		session_start();
 		$val = floatval($_SESSION['scan']['progress']);
 		$new_val = round($val+0.1 , 2);
-		if ($new_val > 100) $new_val = 100;
+		if ($new_val > 100) $new_val = 90;
 		$_SESSION['scan']['progress'] = $new_val;
 		$val_txt = trim($_SESSION['scan']['progress_txt']);
 		session_write_close();

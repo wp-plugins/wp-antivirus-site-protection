@@ -3,13 +3,14 @@
 Plugin Name: WP Antivirus Site Protection (by SiteGuarding.com)
 Plugin URI: http://www.siteguarding.com/en/website-extensions
 Description: Adds more security for your WordPress website. Server-side scanning. Performs deep website scans of all the files. Virus and Malware detection.
-Version: 2.1.3
+Version: 2.2
 Author: SiteGuarding.com (SafetyBis Ltd.)
 Author URI: http://www.siteguarding.com
 License: GPLv2
 TextDomain: plgavp
 */
 define( 'SITEGUARDING_SERVER', 'https://www.siteguarding.com/ext/antivirus/index.php');
+
 
 if( !is_admin() ) {
 	if ( isset($_GET['task']) && $_GET['task'] == 'cron' )
@@ -638,7 +639,11 @@ if ($params['exp_date'] < date("Y-m-d", mktime(0, 0, 0, date("m")  , date("d")-7
 ?>
 </p>
 
-<p class="avp_getpro"><a href="https://www.siteguarding.com/en/buy-service/antivirus-site-protection?domain=<?php echo urlencode( get_site_url() ); ?>&email=<?php echo urlencode(get_option( 'admin_email' )); ?>" target="_blank">Get PRO version of WP Antivirus Site Protection</a></p>
+<?php
+if ($params['membership'] == 'pro') $account_type_txt = 'You have PRO version';
+else $account_type_txt = 'Get PRO version of WP Antivirus Site Protection';
+?>
+<p class="avp_getpro"><a href="https://www.siteguarding.com/en/buy-service/antivirus-site-protection?domain=<?php echo urlencode( get_site_url() ); ?>&email=<?php echo urlencode(get_option( 'admin_email' )); ?>" target="_blank"><?php echo $account_type_txt; ?></a></p>
 
 
 <div class="mod-box"><div>
@@ -705,6 +710,9 @@ if (count($reports)) {
 		<?php self::HelpBlock(); ?>
 
 </div>
+<?php
+if ($params['membership'] != 'pro') {
+?>
 <div class="divCell divCellReka">
 	<div class="RekaBlock">
 		<a href="https://www.siteguarding.com/en/website-extensions">
@@ -742,6 +750,9 @@ if (count($reports)) {
 	</div>
 	
 </div>
+<?php
+}
+?>
 </div>
 </div>	
 		
@@ -809,7 +820,7 @@ if (count($reports)) {
 					);	
 				}
 				
-				refreshIntervalId =  setInterval(GetProgress, 2000);
+				refreshIntervalId =  setInterval(GetProgress, 3000);
 				
             });
         </script>
