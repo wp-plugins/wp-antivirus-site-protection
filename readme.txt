@@ -1,10 +1,10 @@
 === Plugin Name ===
 Contributors: SiteGuarding
 Donate link: https://www.siteguarding.com/en/website-extensions
-Tags: antivirus, malware, virus, scanner, security, block, blocked, attack, hack, hacker, hacking, protection, website security, scan, malware removal, virus detection
+Tags: antivirus, malware, virus, scanner, security, block, backdoor, attack, hack, hacker, hacking, protection, website security, scan, malware removal, virus detection
 Requires at least: 3.0
 Tested up to: 3.9 
-Stable tag: 2.1.1
+Stable tag: 2.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,8 +12,11 @@ Adds more security for your website. Server-side scanning. Performs deep website
 
 == Description ==
 
-WP Antivirus Site Protection is the security plugin to prevent/detect and remove malicious computer viruses. 
-It detects: backdoors, rootkits, trojan horses, worms, fraudtools, adware and spyware and etc.
+WP Antivirus Site Protection is the security plugin to prevent/detect and remove malicious viruses and suspicious codes. 
+It detects: backdoors, rootkits, trojan horses, worms, fraudtools, adware, spyware and etc.
+WP Antivirus Site Protection scans not only theme files, it scans and analyzes all the files of your WordPress website (theme files, all the files of the plugins, files in upload folder and etc).
+
+> This plugin will be especially useful for everybody who downloads WP themes and plugins from torrents and websites with free stuff instead of purchase the original copies from the developers. You will be shocked, how many free gifts they have inside :) 
 
 **Main features:**
 
@@ -29,7 +32,7 @@ It detects: backdoors, rootkits, trojan horses, worms, fraudtools, adware and sp
 
 > Protect your website before the problems come. Monitor your website and minimize incident time with our automated scans.
 
-WP Antivirus Site Protection plugin is a great solution for all website owners. It was developed by our engineers who has a many years experience in website security. Our plugin intelligently crawl your website and identify all possible infections and backdoors on your website. Every day we update database and add new logics and function (Heuristic Logic feature) to keep your website safe.
+WP Antivirus Site Protection plugin is a great solution for all website owners. It was developed by our engineers who has a many years experience in website security. Our plugin intelligently crawl your website and identify all possible infections and backdoors on your website. Every day we update database and add new logics and functions (Heuristic Logic feature) to keep your website safe.
 
 **Here is the list of malware types what our scanner can detect:**
 
