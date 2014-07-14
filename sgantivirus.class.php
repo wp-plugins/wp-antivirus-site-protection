@@ -2,9 +2,9 @@
 
 class SGAntiVirus_module
 {
-	public static  $debug = false;
+	public static  $debug = true;
 	
-	public static $SITEGUARDING_SERVER = 'https://www.siteguarding.com/ext/antivirus/index.php';
+	public static $SITEGUARDING_SERVER = 'http://www.siteguarding.com/ext/antivirus/index.php';
 	
 
 	public static function UpdateProgressValue($current_task, $total_tasks, $current_step_txt)
@@ -22,8 +22,11 @@ class SGAntiVirus_module
 	
 	public static function scan($check_session = true, $show_results = true)
 	{
-
 		set_time_limit ( 3600 );
+		
+		$error_msg = 'Start Scan Process';
+		if (self::$debug) self::DebugLog($error_msg, true);
+		
 		
 		include_once(dirname(__FILE__).'/HttpClient.class.php');
 		$HTTPClient = new HTTPClient();
@@ -45,22 +48,32 @@ class SGAntiVirus_module
 		
 		$scan_path = trim($_POST['scan_path']);
 		$access_key = trim($_POST['access_key']);
-		$do_evristic = intval($_POST['do_evristic']);
+		//$do_evristic = intval($_POST['do_evristic']);
+		$do_evristic = 1;
 		$domain = trim($_POST['domain']);
 		$email = trim($_POST['email']);
 		$session_report_key = md5($domain.'-'.rand(1,100).'-'.time());
 		
-				$current_task = 0;
+		//session_start();
+		$current_task = 0;
 		$total_tasks = 0;
-		$total_tasks += 1;			$total_tasks += 1;			$total_tasks += 1;			$total_tasks += 1;	
+		$total_tasks += 1;	// Analyze what way to use for packing
+		$total_tasks += 1;	// Pack files
+		$total_tasks += 1;	// Send files
+		$total_tasks += 1;	// Get report
+
 		
-		
+		/**
+		 * Analyze what way to use for packing
+		 */
 	 	$ssh_flag = false;
 		if ( function_exists('exec') ) 
 		{
-						$ssh_flag = true;
+			// Pack files with ssh 
+			$ssh_flag = true;
 		}
-				$current_task += 1;
+		// Update progress
+		$current_task += 1;
 		self::UpdateProgressValue($current_task, $total_tasks, 'Initialization.');
 		
 		
@@ -69,25 +82,42 @@ class SGAntiVirus_module
 		
 		if ($ssh_flag)
 		{
-							$error_msg = 'Start - Pack with SSH';
+			// SSH way
+				$error_msg = 'Start - Pack with SSH';
 				if (self::$debug) self::DebugLog($error_msg);
 				
 			$cmd = 'cd '.$scan_path.''."\n".'tar -czf '.dirname(__FILE__).'/tmp/pack.tar $( find . -iregex \'.*\.\(html\|phtml\|php*\|cgi\|pl\|js\)$\' )';
 			$output = array();
 			$result = exec($cmd, $output);
+			
+			if (file_exists(dirname(__FILE__).'/tmp/pack.tar') === false) 
+			{
+				$ssh_flag = false;
+				
+				$error_msg = 'Change pack method from SSH to PHP (ZipArchive)';
+				if (self::$debug) self::DebugLog($error_msg);
+			}
 		}
-		else {
-					    if (class_exists('ZipArchive'))
+		
+		if (!$ssh_flag) 
+		{
+			// PHP way
+		    if (class_exists('ZipArchive'))
 		    {
 		    	$file_zip = dirname(__FILE__).'/tmp/pack.zip';
 		    	if (file_exists($file_zip)) unlink($file_zip);
 		    	$pack_dir = $scan_path;
 		    	
-		        		        $zip = new ZipArchive;
+		        // open archive
+		        $zip = new ZipArchive;
 		        if ($zip->open($file_zip, ZIPARCHIVE::CREATE | ZIPARCHIVE::OVERWRITE) === TRUE) 
 		        {
-		            		            		            $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator( $pack_dir ));
-		            		            		            
+		            // initialize an iterator
+		            // pass it the directory to be processed
+		            $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator( $pack_dir ));
+		            // iterate over the directory
+		            // add each file found to the archive
+		            
 		            foreach ($iterator as $key=>$value) 
 		            {
 				        $file_ext = strtolower( substr( $key, strrpos($key, ".") ) );
@@ -101,13 +131,17 @@ class SGAntiVirus_module
 			                	$s = $zip->addFile(realpath($key), $short_key);
 				                if (!$s) 
 				                {
-				                    				                    				                }
+				                    //$result['status'] = false;//'error';
+				                    //$result['msg'][] = 'Couldnt add file '.$key; 
+				                }
 			            	}
 						}
 					}
-		             		            $zip->close();
+		             // close and save archive
+		            $zip->close();
 		            
-		            		        }
+		            //$result['msg'][] = 'Archive created successfully'; 
+		        }
 		        else {
 		        	echo 'Error: Couldnt open ZIP archive.';
 		            self::UpdateProgressValue($current_task, $total_tasks, 'Error: Couldnt open ZIP archive.');
@@ -121,11 +155,14 @@ class SGAntiVirus_module
 		        exit;
 		    }
 		}
-				$current_task += 1;
+		// Update progress
+		$current_task += 1;
 		self::UpdateProgressValue($current_task, $total_tasks, 'Collecting information about the files.');
 
 
-		
+		/**
+		 * Send files to SG server
+		 */
 		if ($ssh_flag)
 		{
 	 		$archive_filename = dirname(__FILE__)."/tmp/pack.tar";
@@ -135,13 +172,25 @@ class SGAntiVirus_module
 			$archive_format = 'zip';
 		}
 	 	
+	 	
+	 	// Check if pack file is exist
+		if (file_exists($archive_filename) === false) 
+		{
+			$error_msg = 'Pack file is not exist. Probably not enough space on the server.';
+			if (self::$debug) self::DebugLog($error_msg);
+			echo $error_msg;
+			exit;
+		}
+		
+		
 		$error_msg = 'Start - Send Packed files to SG server';
 		if (self::$debug) self::DebugLog($error_msg);
 		
 		$tar_size = filesize($archive_filename);
 		if ($tar_size < 32 * 1024 * 1024)
 		{
-						$post_data = base64_encode(json_encode(array(
+			// Send file
+			$post_data = base64_encode(json_encode(array(
 					'domain' => $domain,
 					'access_key' => $access_key,
 					'email' => $email,
@@ -170,12 +219,15 @@ class SGAntiVirus_module
 			echo $error_msg;
 			exit;
 		}
-				$current_task += 1;
+		// Update progress
+		$current_task += 1;
 		self::UpdateProgressValue($current_task, $total_tasks, 'Analyzing the files. Preparing the report.');
 		
 
 
-		
+		/**
+		 * Check and Get report from SG server
+		 */
 		$error_msg = 'Start - Report generation';
 		if (self::$debug) self::DebugLog($error_msg);
 		
@@ -207,22 +259,27 @@ class SGAntiVirus_module
 			{
 				echo $result_json['text'];
 				
-								self::SendEmail($email, $result_json['text']);
+				// Send email to user with the report
+				self::SendEmail($email, $result_json['text']);
 				
-								$current_task += 1;
+				// Update progress
+				$current_task += 1;
 				self::UpdateProgressValue($current_task, $total_tasks, 'Done. Sending your report.');
 				
 				$error_msg = 'Finished'."\n";
 				if (self::$debug) self::DebugLog($error_msg);
 				
-								if ($ssh_flag)
+				// Delete old pack file
+				if ($ssh_flag)
 				{
-										$cmd = 'rm '.dirname(__FILE__).'/tmp/pack.tar';
+					// SSH way
+					$cmd = 'rm '.dirname(__FILE__).'/tmp/pack.tar';
 					$output = array();
 					$result = exec($cmd, $output);
 				}
 				else {
-										unlink(dirname(__FILE__).'/tmp/pack.zip');
+					// PHP way
+					unlink(dirname(__FILE__).'/tmp/pack.zip');
 				}
 				
 				exit;	
@@ -249,7 +306,8 @@ class SGAntiVirus_module
 		$val_txt = trim($_SESSION['scan']['progress_txt']);
 		session_write_close();
 		
-				
+		//if (session_status() !== PHP_SESSION_ACTIVE) session_start();
+		
 		return $val."|".$val_txt;
 	}
 	
@@ -257,13 +315,13 @@ class SGAntiVirus_module
 	public static function UploadSingleFile($file, $action, $post_data)
 	{
 		$target_url = self::$SITEGUARDING_SERVER.'?action='.$action;
-	        		$file_name_with_full_path = $file;
-	        
+		$file_name_with_full_path = $file;
 		$post = array(
 			'data' => $post_data,
 			'file_contents'=>'@'.$file_name_with_full_path
 		);
-	
+
+
 	 	$ch = curl_init();
 		curl_setopt($ch, CURLOPT_URL,$target_url);
 		curl_setopt($ch, CURLOPT_POST,1);
@@ -272,7 +330,13 @@ class SGAntiVirus_module
 		$curl_error = curl_error($ch);
 		curl_close ($ch);
 	
-		if ($curl_error) return false;
+		if (!$result) 
+		{
+			$error_msg = 'CURL upload is failed - '.$curl_error;
+			if (self::$debug) self::DebugLog($error_msg);
+			
+			return false;
+		}
 		else return true;
 	}
 
@@ -280,10 +344,13 @@ class SGAntiVirus_module
 
 	public static function SendEmail($email, $result, $subject = '')
 	{
-		$to  = $email; 		
-				if ($subject == '') $subject = 'AntiVirus Report ['.date("Y-m-d H:i:s").']';
+		$to  = $email; // note the comma
 		
-		        $body_message = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+		// subject
+		if ($subject == '') $subject = 'AntiVirus Report ['.date("Y-m-d H:i:s").']';
+		
+		// message
+        $body_message = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
@@ -415,19 +482,23 @@ class SGAntiVirus_module
 
 		$body_message = str_replace("{MESSAGE_CONTENT}", $result, $body_message);
 		
-				$headers  = 'MIME-Version: 1.0' . "\r\n";
+		// To send HTML mail, the Content-type header must be set
+		$headers  = 'MIME-Version: 1.0' . "\r\n";
 		$headers .= 'Content-type: text/html; charset=UTF-8' . "\r\n";
 		
-				$headers .= 'From: '. $to . "\r\n";
+		// Additional headers
+		$headers .= 'From: '. $to . "\r\n";
 		
-				mail($to, $subject, $body_message, $headers);
+		// Mail it
+		mail($to, $subject, $body_message, $headers);
 	}
 	
 	
 	
-	public static function DebugLog($txt)
+	public static function DebugLog($txt, $clean_log_file = false)
 	{
-		$fp = fopen(dirname(__FILE__).'/debug.log', 'a');
+		if ($clean_log_file) $fp = fopen(dirname(__FILE__).'/tmp/debug.log', 'w');
+		else $fp = fopen(dirname(__FILE__).'/tmp/debug.log', 'a');
 		$a = date("Y-m-d H:i:s")." ".$txt."\n";
 		fwrite($fp, $a);
 		fclose($fp);
