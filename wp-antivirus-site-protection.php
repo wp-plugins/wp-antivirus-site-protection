@@ -3,7 +3,7 @@
 Plugin Name: WP Antivirus Site Protection (by SiteGuarding.com)
 Plugin URI: http://www.siteguarding.com/en/website-extensions
 Description: Adds more security for your WordPress website. Server-side scanning. Performs deep website scans of all the files. Virus and Malware detection.
-Version: 2.2
+Version: 2.3
 Author: SiteGuarding.com (SafetyBis Ltd.)
 Author URI: http://www.siteguarding.com
 License: GPLv2
@@ -11,7 +11,10 @@ TextDomain: plgavp
 */
 define( 'SITEGUARDING_SERVER', 'https://www.siteguarding.com/ext/antivirus/index.php');
 
+//error_reporting(E_ERROR | E_WARNING);
+//error_reporting(E_ERROR);
 
+// Cron check
 if( !is_admin() ) {
 	if ( isset($_GET['task']) && $_GET['task'] == 'cron' )
 	{
@@ -27,17 +30,42 @@ if( !is_admin() ) {
 				
 				if (!class_exists('SGAntiVirus_module'))
 				{
-										exit;
+					// Error module is not loaded
+					exit;
 				}
 				
-								$_POST['scan_path'] = ABSPATH;
+				// Prepare scan
+				$_POST['scan_path'] = ABSPATH;
 				$_POST['access_key'] = $access_key;
 				$_POST['do_evristic'] = $params['do_evristic'];
 				$_POST['domain'] = get_site_url();
 				$_POST['email'] = get_option( 'admin_email' );
 				
 				
-								SGAntiVirus_module::scan(false, false);
+				// Start scan
+				SGAntiVirus_module::scan(false, false);
+		}
+		
+		exit;
+	}
+	
+	
+	if ( isset($_GET['task']) && $_GET['task'] == 'status' )
+	{
+		error_reporting(0);
+		
+		$access_key = trim($_GET['access_key']);
+	
+		$params = plgwpavp_GetExtraParams();
+	
+		if ($params['access_key'] == $access_key)
+		{
+			$a = array(
+				'status' => 'ok',
+				'answer' => md5($_GET['answer'])
+			);
+			
+			echo json_encode($a);
 		}
 		
 		exit;
@@ -66,9 +94,11 @@ if( is_admin() ) {
 
 	function plgavp_settings_page_callback() 
 	{
-				if (!file_exists(dirname(__FILE__).'/sgantivirus.class.php'))
+		// Load class
+		if (!file_exists(dirname(__FILE__).'/sgantivirus.class.php'))
 		{
-						SGAntiVirus::ShowMessage('File '.dirname(__FILE__).'/sgantivirus.class.php is not exist.');
+			// Error class module is not loaded
+			SGAntiVirus::ShowMessage('File '.dirname(__FILE__).'/sgantivirus.class.php is not exist.');
 			return;
 		}
 		
@@ -76,7 +106,8 @@ if( is_admin() ) {
 		
 		if (!class_exists('SGAntiVirus_module'))
 		{
-						SGAntiVirus::ShowMessage('Main antivirus scanner module is not loaded. Please try again.');
+			// Error module is not loaded
+			SGAntiVirus::ShowMessage('Main antivirus scanner module is not loaded. Please try again.');
 			return;
 		}
 		
@@ -89,7 +120,9 @@ if( is_admin() ) {
 		<?php
 		
 		
-						if (isset($_POST['action']) && $_POST['action'] == 'ConfirmRegistration' && check_admin_referer( 'name_254f4bd3ea8d' ))
+		// Actions
+		// Confirm Registration
+		if (isset($_POST['action']) && $_POST['action'] == 'ConfirmRegistration' && check_admin_referer( 'name_254f4bd3ea8d' ))
 		{
 			$errors = SGAntiVirus::checkServerSettings(true);
 			$access_key = md5(time().get_site_url());
@@ -100,7 +133,8 @@ if( is_admin() ) {
 				$data = array('registered' => 1, 'email' => $email, 'access_key' => $access_key);
 				plgwpavp_SetExtraParams($data);
 				
-								$message = 'Dear Customer!'."<br><br>";
+				// Send access_key to user
+				$message = 'Dear Customer!'."<br><br>";
 				$message .= 'Thank you for registration your copy of WP Antivirus Site Protection. Please keep this email for your records, it contains your registration information and you will need it in the future.'."<br><br>";
 				$message .= '<b>Registration information:</b>'."<br><br>";
 				$message .= '<b>Domain:</b> '.get_site_url()."<br>";
@@ -111,19 +145,22 @@ if( is_admin() ) {
 				SGAntiVirus_module::SendEmail($email, $message, $subject);
 			}
 			else {
-								SGAntiVirus::ShowMessage($result);
+				// Show error
+				SGAntiVirus::ShowMessage($result);
 				return;
 			}
 		}
 		
-				if (isset($_POST['action']) && $_POST['action'] == 'StartScan' && check_admin_referer( 'name_254f4bd3ea8d' ))
+		// Start Scan
+		if (isset($_POST['action']) && $_POST['action'] == 'StartScan' && check_admin_referer( 'name_254f4bd3ea8d' ))
 		{
 			$data = array('allow_scan' => intval($_POST['allow_scan']), 'do_evristic' => intval($_POST['do_evristic']));
 			plgwpavp_SetExtraParams($data);
 			
 			$params = plgwpavp_GetExtraParams();
 			
-						$progress_info = SGAntiVirus::GetProgressInfo(get_site_url(), $params['access_key']);
+			// Check if something in progress
+			$progress_info = SGAntiVirus::GetProgressInfo(get_site_url(), $params['access_key']);
 			if ($progress_info['in_progress'] > 0)
 			{
 				$msg = 'Another scanning process is in progress. In 5-10 minutes you will get report by email or it will be available in Latest Reports section.';
@@ -144,16 +181,26 @@ if( is_admin() ) {
 		
 
 
-				$params = plgwpavp_GetExtraParams();
+		// Get params
+		$params = plgwpavp_GetExtraParams();
 		
-						if (!isset($params['registered']) || intval($params['registered']) == 0) { SGAntiVirus::page_ConfirmRegistration(); return; }
+		// Check if website is registered
+		//SGAntiVirus::page_ConfirmRegistration(); return;
+		if (!isset($params['registered']) || intval($params['registered']) == 0) { SGAntiVirus::page_ConfirmRegistration(); return; }
 		
-				$license_info = SGAntiVirus::GetLicenseInfo(get_site_url(), $params['access_key']);
+		// Get data from siteguading about number of scans and exp date
+		$license_info = SGAntiVirus::GetLicenseInfo(get_site_url(), $params['access_key']);
 		if ($license_info === false) { SGAntiVirus::page_ConfirmRegistration(); return; }
 		
-				if (!SGAntiVirus::checkServerSettings()) return;
+		// Check server settings
+		if (!SGAntiVirus::checkServerSettings()) return;
 
-		
+		/*
+		echo '<pre>';
+		print_r($license_info);
+		print_r($params);
+		echo '</pre>';
+		*/
 		
 		foreach ($license_info as $k => $v)
 		{
@@ -449,8 +496,10 @@ wp_nonce_field( 'name_AFAD78D85E01' );
             
 
 			require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
-			dbDelta( $sql );             
-               			include_once(dirname(__FILE__).'/sgantivirus.class.php');
+			dbDelta( $sql ); // Creation of the new TABLE
+            
+            // Notify user
+   			include_once(dirname(__FILE__).'/sgantivirus.class.php');
             $message = 'Dear Customer!'."<br><br>";
 			$message .= 'Thank you for installation of our security plugin. We will do the best to keep your website safe and secured.'."<br><br>";
 			$message .= 'One more step to secure your website. Please login to Dashboard of your WordPress website. Find in menu "Antivirus", follow the instructions.'."<br><br>";
@@ -482,7 +531,9 @@ wp_nonce_field( 'name_AFAD78D85E01' );
 
 
 
-
+/**
+ * Functions
+ */
 
 
 
@@ -525,10 +576,12 @@ function plgwpavp_SetExtraParams($data = array())
         
         if ($tmp == 0)
         {
-                        $wpdb->insert( $table_name, array( 'var_name' => $k, 'var_value' => $v ) ); 
+            // Insert    
+            $wpdb->insert( $table_name, array( 'var_name' => $k, 'var_value' => $v ) ); 
         }
         else {
-                        $data = array('var_value'=>$v);
+            // Update
+            $data = array('var_value'=>$v);
             $where = array('var_name' => $k);
             $wpdb->update( $table_name, $data, $where );
         }
@@ -543,7 +596,7 @@ function plgwpavp_SetExtraParams($data = array())
 
 class SGAntiVirus {
 
-	function page_ConfirmRegistration()
+	public static function page_ConfirmRegistration()
 	{
 		?>
 		<script>
@@ -606,7 +659,7 @@ class SGAntiVirus {
 	}	
 	
 	
-	function page_PreScan($params)
+	public static function page_PreScan($params)
 	{
 		
 		if (intval($params['scans']) == 30)
@@ -650,6 +703,7 @@ else $account_type_txt = 'Get PRO version of WP Antivirus Site Protection';
 <h3>Latest Reports</h3>	
 <?php
 $reports = $params['reports'];
+//print_r($params);
 if (count($reports)) {
 	?>
 	<p>
@@ -682,10 +736,12 @@ if (count($reports)) {
 			<table id="settings_page">
 
 			<tr class="line_4">
-			<th scope="row">Heuristic Logic</th>
+			<th scope="row">Heuristic Logic is enabled</th>
 			<td>
+			<?php /*
 				<?php if (!isset($params['do_evristic'])) $params['do_evristic'] = 1; ?>
-	            <input name="do_evristic" type="checkbox" id="do_evristic" value="1" <?php if (intval($params['do_evristic']) == 1) echo 'checked="checked"'; ?>> Enable advanced heuristic logic. 
+	            <input name="do_evristic" type="checkbox" id="do_evristic" value="1" <?php if (intval($params['do_evristic']) == 1) echo 'checked="checked"'; ?>> Enable advanced heuristic logic.
+				*/ ?> 
 			</td>
 			</tr>
 			
@@ -702,6 +758,8 @@ if (count($reports)) {
 		<input type="hidden" name="page" value="plgavp_Antivirus"/>
 		<input type="hidden" name="action" value="StartScan"/>
 		</form>
+
+<p><b>Found suspicious file on your website?</b> Analyze it for free with our online tool antivirus. <a target="_blank" href="https://www.siteguarding.com/en/website-antivirus">Click here</a></p>
 
 <img class="imgpos" alt="WP Antivirus Site Protection" src="<?php echo plugins_url('images/', __FILE__).'mid_box.png'; ?>" width="110" height="70">
 			
@@ -761,7 +819,7 @@ if ($params['membership'] != 'pro') {
 	
 	
 	
-	function ScanProgress($session_id = '', $wp_path = '/', $params = array())
+	public static function ScanProgress($session_id = '', $wp_path = '/', $params = array())
 	{
 		?>
 		
@@ -851,7 +909,7 @@ if ($params['membership'] != 'pro') {
 	
 
 
-	function GetLicenseInfo($domain, $access_key)
+	public static function GetLicenseInfo($domain, $access_key)
 	{
 		$link = SITEGUARDING_SERVER.'?action=licenseinfo&type=json&data=';
 		
@@ -869,7 +927,7 @@ if ($params['membership'] != 'pro') {
 	}
 	
 	
-	function GetProgressInfo($domain, $access_key)
+	public static function GetProgressInfo($domain, $access_key)
 	{
 		$link = SITEGUARDING_SERVER.'?action=progressinfo&type=json&data=';
 		
@@ -887,9 +945,10 @@ if ($params['membership'] != 'pro') {
 	}
 
 	
-	function sendRegistration($domain, $email, $access_key = '', $errors = '')
+	public static function sendRegistration($domain, $email, $access_key = '', $errors = '')
 	{
-			    $link = SITEGUARDING_SERVER.'?action=register&type=json&data=';
+		// Send data
+	    $link = SITEGUARDING_SERVER.'?action=register&type=json&data=';
 	    
 	    $data = array(
 			'domain' => $domain,
@@ -905,12 +964,13 @@ if ($params['membership'] != 'pro') {
 	}
 
 	
-	function checkServerSettings($return_error_names = false)
+	public static function checkServerSettings($return_error_names = false)
 	{
 		$error_name = array();
 		$error = 0;
 		
-				if (!is_writable(dirname(__FILE__).'/tmp/'))
+		// Check tmp folder is writable
+		if (!is_writable(dirname(__FILE__).'/tmp/'))
 		{
 			chmod ( dirname(__FILE__).'/tmp/' , 0777 ); 
 			if (!is_writable(dirname(__FILE__).'/tmp/'))
@@ -926,7 +986,8 @@ if ($params['membership'] != 'pro') {
 		}
 		
 		
-				if ( !function_exists('exec') ) 
+		// Check ssh
+		if ( !function_exists('exec') ) 
 		{
 		    if (!class_exists('ZipArchive'))
 		    {
@@ -941,18 +1002,31 @@ if ($params['membership'] != 'pro') {
 		}
 		
 		
+		// Check ssh
+		if ( !function_exists('curl_init') ) 
+		{
+			$error = 1;
+			$error_name[] = 'CURL';
+			self::ShowMessage('CURL is not installed on your server.');
+			
+			?>
+			Please ask your hoster support to install or enable CURL for your server.
+			<?php
+		}
+		
+		
 		if ($return_error_names) return json_encode($error_name);
 		if ($error == 1) return false;
 		else return true;
 	}
 	
-	function ShowMessage($txt)
+	public static function ShowMessage($txt)
 	{
 		echo '<div id="setting-error-settings_updated" class="updated settings-error"><p><strong>'.$txt.'</strong></p></div>';
 	}
 	
 	
-	function HelpBlock()
+	public static function HelpBlock()
 	{
 		?>
 		<h3 class="avp_header icon_contacts">Support</h3>
