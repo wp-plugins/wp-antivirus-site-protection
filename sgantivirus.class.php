@@ -176,7 +176,7 @@ class SGAntiVirus_module
 	 	// Check if pack file is exist
 		if (file_exists($archive_filename) === false) 
 		{
-			$error_msg = 'Pack file is not exist. Probably not enough space on the server.';
+			$error_msg = 'Error: Pack file is not exist. Probably not enough space on the server.';
 			if (self::$debug) self::DebugLog($error_msg);
 			echo $error_msg;
 			exit;
