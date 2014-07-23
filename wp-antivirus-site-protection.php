@@ -3,7 +3,7 @@
 Plugin Name: WP Antivirus Site Protection (by SiteGuarding.com)
 Plugin URI: http://www.siteguarding.com/en/website-extensions
 Description: Adds more security for your WordPress website. Server-side scanning. Performs deep website scans of all the files. Virus and Malware detection.
-Version: 2.3
+Version: 2.3.1
 Author: SiteGuarding.com (SafetyBis Ltd.)
 Author URI: http://www.siteguarding.com
 License: GPLv2
@@ -918,7 +918,11 @@ if ($params['membership'] != 'pro') {
 			'access_key' => $access_key
 		);
 	    $link .= base64_encode(json_encode($data));
-	    $msg = file_get_contents($link);
+	    //$msg = file_get_contents($link);
+		include_once(dirname(__FILE__).'/HttpClient.class.php');
+		$HTTPClient = new HTTPClient();
+		
+		$msg = $HTTPClient->get($link);
 	    
 	    $msg = trim($msg);
 	    if ($msg == '') return false;
@@ -936,7 +940,11 @@ if ($params['membership'] != 'pro') {
 			'access_key' => $access_key
 		);
 	    $link .= base64_encode(json_encode($data));
-	    $msg = file_get_contents($link);
+	    //$msg = file_get_contents($link);
+		include_once(dirname(__FILE__).'/HttpClient.class.php');
+		$HTTPClient = new HTTPClient();
+		
+		$msg = $HTTPClient->get($link);
 	    
 	    $msg = trim($msg);
 	    if ($msg == '') return false;
@@ -957,7 +965,11 @@ if ($params['membership'] != 'pro') {
 			'errors' => $errors
 		);
 	    $link .= base64_encode(json_encode($data));
-	    $msg = trim(file_get_contents($link));
+	    //$msg = trim(file_get_contents($link));
+		include_once(dirname(__FILE__).'/HttpClient.class.php');
+		$HTTPClient = new HTTPClient();
+		
+		$msg = $HTTPClient->get($link);
 	    
 	    if ($msg == '') return true;
 	    else return $msg;
@@ -1002,7 +1014,7 @@ if ($params['membership'] != 'pro') {
 		}
 		
 		
-		// Check ssh
+		// Check CURL
 		if ( !function_exists('curl_init') ) 
 		{
 			$error = 1;
