@@ -7,19 +7,6 @@ class SGAntiVirus_module
 	public static $SITEGUARDING_SERVER = 'http://www.siteguarding.com/ext/antivirus/index.php';
 	
 
-	public static function UpdateProgressValue($current_task, $total_tasks, $current_step_txt)
-	{
-		$i = round( 100*$current_task/$total_tasks, 2 );
-		
-		session_start();
-		$_SESSION['scan']['progress'] = $i;
-		$_SESSION['scan']['progress_txt'] = $current_step_txt;
-		session_write_close();
-		
-		sleep(3);
-	}
-	
-	
 	public static function scan($check_session = true, $show_results = true)
 	{
 		set_time_limit ( 3600 );
@@ -296,8 +283,36 @@ class SGAntiVirus_module
 	}
 
 
+	/*public static function UpdateProgressValue($current_task, $total_tasks, $current_step_txt)
+	{
+		$i = round( 100*$current_task/$total_tasks, 2 );
+		
+		session_start();
+		$_SESSION['scan']['progress'] = $i;
+		$_SESSION['scan']['progress_txt'] = $current_step_txt;
+		session_write_close();
+		
+		sleep(3);
+	}*/
+	function UpdateProgressValue($current_task, $total_tasks, $current_step_txt)
+	{
+		$i = round( 100*$current_task/$total_tasks, 2 );
+		
+		$a = array(
+			'txt' => $current_step_txt,
+			'progress' => $i
+		);
+		
+		$filename = dirname(__FILE__)."/tmp/antivirus_last_action.log";
+		$fp = fopen($filename, 'w');
+		fwrite($fp, json_encode($a));
+		fclose($fp);
+		
+		sleep(3);
+	}
+
 	
-	public static function readProgress()
+	/*public static function readProgress()
 	{
 		session_start();
 		$val = floatval($_SESSION['scan']['progress']);
@@ -308,6 +323,42 @@ class SGAntiVirus_module
 		session_write_close();
 		
 		//if (session_status() !== PHP_SESSION_ACTIVE) session_start();
+		
+		return $val."|".$val_txt;
+	}
+	*/
+	function readProgress()
+	{
+		$a = array('txt' => 'Loading...', 'progress' => 0);
+		
+		// Read log file
+		$filename = dirname(__FILE__)."/tmp/antivirus_last_action.log";
+		$handle = fopen($filename, "r");
+		if ($handle === false) return $a['progress']."|".$a['txt'];
+		$contents = fread($handle, filesize($filename));
+		fclose($handle);
+		
+		$contents = json_decode($contents, true);
+		if ($contents == NULL || $contents === false) return $a['progress']."|".$a['txt'];
+		
+		$a['txt'] = trim($contents['txt']);
+		$a['progress'] = floatval($contents['progress']);
+		
+		$val = $a['progress'];
+		$new_val = round($val+0.1 , 2);
+		if ($new_val > 100) $new_val = 90;
+		$val_txt = trim($a['txt']);
+		
+		$a = array(
+			'txt' => $val_txt,
+			'progress' => $new_val
+		);
+		
+	
+		$filename = dirname(__FILE__)."/tmp/antivirus_last_action.log";
+		$fp = fopen($filename, 'w');
+		fwrite($fp, json_encode($a));
+		fclose($fp);
 		
 		return $val."|".$val_txt;
 	}
