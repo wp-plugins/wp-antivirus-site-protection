@@ -87,33 +87,36 @@ if( is_admin() ) {
 
 
 	$avp_params = plgwpavp_GetExtraParams();
-	$avp_license_info = SGAntiVirus::GetLicenseInfo(get_site_url(), $avp_params['access_key']);
+	if (count($avp_params))
+	{
+		$avp_license_info = SGAntiVirus::GetLicenseInfo(get_site_url(), $avp_params['access_key']);
+		
+		$avp_alert_main = 0;
+		if (count($avp_license_info['last_scan_files']['main']))
+		{
+			foreach ($avp_license_info['last_scan_files']['main'] as $tmp_file)
+			{
+				if (file_exists(ABSPATH.'/'.$tmp_file)) $avp_alert_main++;
+			}
+		}
+		if ($avp_license_info['membership'] != 'pro') $avp_alert_main = $avp_license_info['last_scan_files_counters']['main'];
 	
-	$avp_alert_main = 0;
-	if (count($avp_license_info['last_scan_files']['main']))
-	{
-		foreach ($avp_license_info['last_scan_files']['main'] as $tmp_file)
+		$avp_alert_heuristic = 0;
+		if (count($avp_license_info['last_scan_files']['heuristic']))
 		{
-			if (file_exists(ABSPATH.'/'.$tmp_file)) $avp_alert_main++;
+			foreach ($avp_license_info['last_scan_files']['heuristic'] as $tmp_file)
+			{
+				if (file_exists(ABSPATH.'/'.$tmp_file)) $avp_alert_heuristic++;
+			}
 		}
-	}
-	if ($avp_license_info['membership'] != 'pro') $avp_alert_main = $avp_license_info['last_scan_files_counters']['main'];
-
-	$avp_alert_heuristic = 0;
-	if (count($avp_license_info['last_scan_files']['heuristic']))
-	{
-		foreach ($avp_license_info['last_scan_files']['heuristic'] as $tmp_file)
+		if ($avp_license_info['membership'] != 'pro') $avp_alert_heuristic = $avp_license_info['last_scan_files_counters']['heuristic'];
+	
+		if ($avp_alert_main > 0 || $avp_alert_heuristic > 0)
 		{
-			if (file_exists(ABSPATH.'/'.$tmp_file)) $avp_alert_heuristic++;
-		}
+			$avp_alert_txt = '<span class="update-plugins"><span class="update-count">'.$avp_alert_main.'/'.$avp_alert_heuristic.'</span></span>';	
+		} 
+		else $avp_alert_txt = '';
 	}
-	if ($avp_license_info['membership'] != 'pro') $avp_alert_heuristic = $avp_license_info['last_scan_files_counters']['heuristic'];
-
-	if ($avp_alert_main > 0 || $avp_alert_heuristic > 0)
-	{
-		$avp_alert_txt = '<span class="update-plugins"><span class="update-count">'.$avp_alert_main.'/'.$avp_alert_heuristic.'</span></span>';	
-	} 
-	else $avp_alert_txt = '';
 	
 	
 
