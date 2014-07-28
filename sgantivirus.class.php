@@ -31,6 +31,7 @@ class SGAntiVirus_module
 		include_once(dirname(__FILE__).'/HttpClient.class.php');
 		$HTTPClient = new HTTPClient();
 		
+		/*
 		if ($check_session)
 		{
 			session_start();
@@ -43,7 +44,7 @@ class SGAntiVirus_module
 				exit;
 			}
 			session_write_close();
-		}
+		}*/
 		
 		
 		$scan_path = trim($_POST['scan_path']);
@@ -176,7 +177,7 @@ class SGAntiVirus_module
 	 	// Check if pack file is exist
 		if (file_exists($archive_filename) === false) 
 		{
-			$error_msg = 'Pack file is not exist. Probably not enough space on the server.';
+			$error_msg = 'Error: Pack file is not exist. Probably not enough space on the server.';
 			if (self::$debug) self::DebugLog($error_msg);
 			echo $error_msg;
 			exit;
