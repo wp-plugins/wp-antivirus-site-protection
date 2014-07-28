@@ -31,7 +31,8 @@ class SGAntiVirus_module
 		include_once(dirname(__FILE__).'/HttpClient.class.php');
 		$HTTPClient = new HTTPClient();
 		
-		/*if ($check_session)
+		/*
+		if ($check_session)
 		{
 			session_start();
 			$session_id = trim($_POST['session_id']);

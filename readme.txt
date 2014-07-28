@@ -4,7 +4,7 @@ Donate link: https://www.siteguarding.com/en/website-extensions
 Tags: antivirus, malware, virus, scanner, security, block, backdoor, attack, hack, hacker, hacking, protection, website security, scan, malware removal, virus detection
 Requires at least: 3.0
 Tested up to: 3.9.1
-Stable tag: 2.3.1
+Stable tag: 3.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -23,6 +23,7 @@ WP Antivirus Site Protection scans not only theme files, it scans and analyzes a
 * Deep scan of every file on your website.
 * Daily update of the virus database.
 * Heuristic Logic feature.
+* Malware removal feature
 * Alerts and Notifications in admin area and by email.
 * Daily cron feature.
 * Scanner can detect a wide list of malware types.
