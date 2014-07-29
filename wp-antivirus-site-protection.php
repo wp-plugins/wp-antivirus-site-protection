@@ -94,6 +94,50 @@ if( !is_admin() ) {
 if( is_admin() ) {
 	
 	error_reporting(0);
+	
+	
+	function plgwpavp_activation()
+	{
+		global $wpdb;
+		$table_name = $wpdb->prefix . 'plgwpavp_config';
+		if( $wpdb->get_var( 'SHOW TABLES LIKE "' . $table_name .'"' ) != $table_name ) {
+			$sql = 'CREATE TABLE IF NOT EXISTS '. $table_name . ' (
+                `id` int(11) NOT NULL AUTO_INCREMENT,
+                `var_name` char(255) CHARACTER SET utf8 NOT NULL,
+                `var_value` char(255) CHARACTER SET utf8 NOT NULL,
+                PRIMARY KEY (`id`)
+			) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;';
+            
+
+			require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
+			dbDelta( $sql ); // Creation of the new TABLE
+            
+            // Notify user
+   			include_once(dirname(__FILE__).'/sgantivirus.class.php');
+            $message = 'Dear Customer!'."<br><br>";
+			$message .= 'Thank you for installation of our security plugin. We will do the best to keep your website safe and secured.'."<br><br>";
+			$message .= 'One more step to secure your website. Please login to Dashboard of your WordPress website. Find in menu "Antivirus", follow the instructions.'."<br><br>";
+			$message .= 'Please visit <a href="https://www.siteguarding.com/en/website-extensions">SiteGuarding.com Extentions<a> and learn more about our security solutions.'."<br><br>";
+			$subject = 'Antivirus Installation';
+			$email = get_option( 'admin_email' );
+			
+			SGAntiVirus_module::SendEmail($email, $message, $subject);
+		}
+	}
+	register_activation_hook( __FILE__, 'plgwpavp_activation' );
+    
+    
+	function plgwpavp_uninstall()
+	{
+		
+		global $wpdb;
+		$table_name = $wpdb->prefix . 'plgwpavp_config';
+		$wpdb->query( 'DROP TABLE ' . $table_name );
+		
+	}
+	register_uninstall_hook( __FILE__, 'plgwpavp_uninstall' );
+	
+	
     
 	add_action( 'admin_init', 'plgavp_admin_init' );
 	function plgavp_admin_init()
@@ -104,7 +148,7 @@ if( is_admin() ) {
 
 
 	$avp_params = plgwpavp_GetExtraParams();
-	if (count($avp_params))
+	if (count($avp_params) && $avp_params !== false)
 	{
 		$avp_license_info = SGAntiVirus::GetLicenseInfo(get_site_url(), $avp_params['access_key']);
 		
@@ -746,50 +790,6 @@ wp_nonce_field( 'name_AFAD78D85E01' );
 	}
 	
 
- 
- 
-    
-	function plgwpavp_activation()
-	{
-		global $wpdb;
-		$table_name = $wpdb->prefix . 'plgwpavp_config';
-		if( $wpdb->get_var( 'SHOW TABLES LIKE "' . $table_name .'"' ) != $table_name ) {
-			$sql = 'CREATE TABLE IF NOT EXISTS '. $table_name . ' (
-                `id` int(11) NOT NULL AUTO_INCREMENT,
-                `var_name` char(255) CHARACTER SET utf8 NOT NULL,
-                `var_value` char(255) CHARACTER SET utf8 NOT NULL,
-                PRIMARY KEY (`id`)
-			) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;';
-            
-
-			require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
-			dbDelta( $sql ); // Creation of the new TABLE
-            
-            // Notify user
-   			include_once(dirname(__FILE__).'/sgantivirus.class.php');
-            $message = 'Dear Customer!'."<br><br>";
-			$message .= 'Thank you for installation of our security plugin. We will do the best to keep your website safe and secured.'."<br><br>";
-			$message .= 'One more step to secure your website. Please login to Dashboard of your WordPress website. Find in menu "Antivirus", follow the instructions.'."<br><br>";
-			$message .= 'Please visit <a href="https://www.siteguarding.com/en/website-extensions">SiteGuarding.com Extentions<a> and learn more about our security solutions.'."<br><br>";
-			$subject = 'Antivirus Installation';
-			$email = get_option( 'admin_email' );
-			
-			SGAntiVirus_module::SendEmail($email, $message, $subject);
-		}
-	}
-	register_activation_hook( __FILE__, 'plgwpavp_activation' );
-    
-    
-	function plgwpavp_uninstall()
-	{
-		
-		global $wpdb;
-		$table_name = $wpdb->prefix . 'plgwpavp_config';
-		$wpdb->query( 'DROP TABLE ' . $table_name );
-		
-	}
-	register_uninstall_hook( __FILE__, 'plgwpavp_uninstall' );
-	
 
 }
 
@@ -806,9 +806,12 @@ wp_nonce_field( 'name_AFAD78D85E01' );
 
 function plgwpavp_GetExtraParams()
 {
-    global $wpdb, $current_user;;
+    global $wpdb;
     
     $table_name = $wpdb->prefix . 'plgwpavp_config';
+    
+    $ppbv_table = $wpdb->get_results("SHOW TABLES LIKE '".$table_name."'" , ARRAY_N);
+    if(!isset($ppbv_table[0])) return false;
     
     $rows = $wpdb->get_results( 
     	"
