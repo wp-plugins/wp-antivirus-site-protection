@@ -3,7 +3,7 @@
 Plugin Name: WP Antivirus Site Protection (by SiteGuarding.com)
 Plugin URI: http://www.siteguarding.com/en/website-extensions
 Description: Adds more security for your WordPress website. Server-side scanning. Performs deep website scans of all the files. Virus and Malware detection.
-Version: 3.1
+Version: 3.1.1
 Author: SiteGuarding.com (SafetyBis Ltd.)
 Author URI: http://www.siteguarding.com
 License: GPLv2
@@ -324,7 +324,29 @@ if( is_admin() ) {
 				}
 			}
 		}
+		
+		// Send main files to SiteGuarding.com
+		if (isset($_POST['action']) && $_POST['action'] == 'SendFilesForAnalyzeMain' && check_admin_referer( 'name_254f4bd3ea8d' ))
+		{
+			$params = plgwpavp_GetExtraParams();
+			
+			$license_info = SGAntiVirus::GetLicenseInfo(get_site_url(), $params['access_key']);
 
+			if ($license_info === false) { SGAntiVirus::page_ConfirmRegistration(); return; }
+			
+			if ($license_info['membership'] == 'pro')
+			{ 
+				$a = SGAntiVirus::SendFilesForAnalyze($license_info['last_scan_files']['main'], $license_info['email']);	
+				if ($a === true)
+				{
+					SGAntiVirus::ShowMessage('Files sent for analyze. SiteGuarding.com support will contact with you within 24-48 hours. Security report analyze will be sent to '.$license_info['email']);	
+				}
+				else {
+					SGAntiVirus::ShowMessage('Operation is failed. Nothing sent for analyze.', 'error');
+				}
+			}
+		}
+		
 		
 		
 		
@@ -416,17 +438,45 @@ if( is_admin() ) {
 					?>
 					<div class="avp_latestfiles_block">
 					<h4>Action is required</h4>
-					<form method="post" action="admin.php?page=plgavp_Antivirus">
+					
 					<?php
 					foreach ($params['last_scan_files']['main'] as $tmp_file)
 					{
 						echo '<p>'.$tmp_file.'</p>';
 					}
 					?>
+	
+					<br />
+					
+					<div class="divTable">
+					<div class="divRow">
+					<div class="divCell">
+					<form method="post" action="admin.php?page=plgavp_Antivirus">
+					<?php
+					if ($params['membership'] == 'pro') 
+					{
+						?>
+						<input type="submit" name="submit" id="submit" class="button button-primary" value="Send Files to SiteGuarding.com">
+						<?php
+					} else {
+						?>
+						<input type="button" class="button button-primary" value="Send Files to SiteGuarding.com" onclick="javascript:alert('Available in PRO version only. Please Upgrade to PRO version.');">
+						<?php
+					}
+					?>	
+					
 					<?php
 					wp_nonce_field( 'name_254f4bd3ea8d' );
-					?>	
-					<br />	
+					?>
+					<input type="hidden" name="page" value="plgavp_Antivirus"/>
+					<input type="hidden" name="action" value="SendFilesForAnalyzeMain"/>
+					</form>
+					</div>
+					
+					<div class="divCell">&nbsp;</div>
+
+					<div class="divCell">
+					<form method="post" action="admin.php?page=plgavp_Antivirus">
 					<?php
 					if ($params['membership'] == 'pro') 
 					{
@@ -441,10 +491,16 @@ if( is_admin() ) {
 					}
 					?>	
 					
-					
+					<?php
+					wp_nonce_field( 'name_254f4bd3ea8d' );
+					?>
 					<input type="hidden" name="page" value="plgavp_Antivirus"/>
 					<input type="hidden" name="action" value="QuarantineFiles"/>
 					</form>
+					
+					</div></div></div>
+					* Please note: Hackers can inject malware codes inside of the normal files. If you delete these files, website can stop to work or will be not stable. We advice to send request to SiteGuarding.com for file review and analyze. 
+					
 					</div>
 					<?php
 				}
@@ -1179,21 +1235,49 @@ if ( $params['last_scan_files_counters']['main'] > 0 || $params['last_scan_files
 				}
 				
 				if (count($params['last_scan_files']['main']) > 0)
-				{
+{
 					?>
 					<div class="avp_latestfiles_block">
 					<h4>Action is required</h4>
-					<form method="post" action="admin.php?page=plgavp_Antivirus">
+					
 					<?php
 					foreach ($params['last_scan_files']['main'] as $tmp_file)
 					{
 						echo '<p>'.$tmp_file.'</p>';
 					}
 					?>
+	
+					<br />
+					
+					<div class="divTable">
+					<div class="divRow">
+					<div class="divCell">
+					<form method="post" action="admin.php?page=plgavp_Antivirus">
+					<?php
+					if ($params['membership'] == 'pro') 
+					{
+						?>
+						<input type="submit" name="submit" id="submit" class="button button-primary" value="Send Files to SiteGuarding.com">
+						<?php
+					} else {
+						?>
+						<input type="button" class="button button-primary" value="Send Files to SiteGuarding.com" onclick="javascript:alert('Available in PRO version only. Please Upgrade to PRO version.');">
+						<?php
+					}
+					?>	
+					
 					<?php
 					wp_nonce_field( 'name_254f4bd3ea8d' );
-					?>	
-					<br />	
+					?>
+					<input type="hidden" name="page" value="plgavp_Antivirus"/>
+					<input type="hidden" name="action" value="SendFilesForAnalyzeMain"/>
+					</form>
+					</div>
+					
+					<div class="divCell">&nbsp;</div>
+
+					<div class="divCell">
+					<form method="post" action="admin.php?page=plgavp_Antivirus">
 					<?php
 					if ($params['membership'] == 'pro') 
 					{
@@ -1208,10 +1292,16 @@ if ( $params['last_scan_files_counters']['main'] > 0 || $params['last_scan_files
 					}
 					?>	
 					
-					
+					<?php
+					wp_nonce_field( 'name_254f4bd3ea8d' );
+					?>
 					<input type="hidden" name="page" value="plgavp_Antivirus"/>
 					<input type="hidden" name="action" value="QuarantineFiles"/>
 					</form>
+					
+					</div></div></div>
+					* Please note: Hackers can inject malware codes inside of the normal files. If you delete these files, website can stop to work or will be not stable. We advice to send request to SiteGuarding.com for file review and analyze. 
+					
 					</div>
 					<?php
 				}
