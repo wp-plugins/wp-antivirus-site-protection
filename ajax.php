@@ -8,29 +8,22 @@ $action = $_REQUEST['action'];
 
 switch ($action)
 {
+	// Start Scan AJAX
 	case 'StartScan_AJAX':
-		StartScan_AJAX();
+		SGAntiVirus_module::scan();
 		break;
 		
+	// Get Scan Progress AJAX	
 	case 'GetScanProgress_AJAX':
-		GetScanProgress_AJAX();
+		echo SGAntiVirus_module::readProgress();
+		break;
+		
+	// Get Report AJAX
+	case 'GetScanReport_AJAX':
+		echo SGAntiVirus_module::getReportText();
 		break;
 }
 
 exit;
-
-
-// Start Scan AJAX
-function StartScan_AJAX()
-{
-	SGAntiVirus_module::scan();	
-}
-
-// Get Scan Progress AJAX
-function GetScanProgress_AJAX()
-{
-	echo SGAntiVirus_module::readProgress();
-}
-
 
 ?>
