@@ -9,11 +9,13 @@
 #settings_page td.sep{border-bottom: 1px solid #aaa;padding:15px 0 0 0;}
 #settings_page td.sepbot{padding:15px 0 0 0;}
 
+.avp_reviewreport_block{max-width: 480px;text-overflow:ellipsis;overflow:hidden;white-space: nowrap;}
 #progress_bar {width:500px;height:40px; border:1px solid #222;position: relative;}
 #progress_bar_process{width:0px;height:40px;background-color:#4B9308;position: absolute;}
 #progress_bar_txt{width:100%;height:40px;line-height:40px;text-align:center;position: absolute;font-size:14px;color:#000}
 
-.msg_box{border: 1px solid;padding:5px 10px;font-weight: bold;}
+.msg_alert{color:#D8000C;}
+.msg_box{border: 1px solid;padding:5px 10px;font-weight: bold;line-height:20px}
 .msg_error{color:#D8000C;background-color: #FFBABA;}
 .msg_warning {color: #9F6000;background-color: #FEEFB3;}
 .msg_info {color: #00529B;background-color: #BDE5F8;}
@@ -119,6 +121,7 @@ padding-bottom: 18px;
 }
 
 .mod-box .module-title {border-bottom:3px solid #f79432}
+.mod-box h3{margin-top:0;padding-top:0}
 .table-vat {vertical-align: top;}
 .table-vat ul{padding-left: 30px;}
 
@@ -129,6 +132,7 @@ padding-bottom: 18px;
 .avp_latestfiles_block{padding:1px 10px 10px 10px; background-color: #fff;}
 .avp_latestfiles_block h4 {color:#DD3146;}
 .avp_latestfiles_block p{padding:1px 0;margin:0}
+.avpextraoption_txt{width:70%; padding-right:20px}
 
 
 

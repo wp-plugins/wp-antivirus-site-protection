@@ -2,17 +2,28 @@
 
 class SGAntiVirus_module
 {
+	public static  $antivirus_version = '4.0';
+	
 	public static  $debug = true;
+	
+	public static  $bool_list = array(0 => 'FALSE', 1 => 'TRUE');
 	
 	public static $SITEGUARDING_SERVER = 'http://www.siteguarding.com/ext/antivirus/index.php';
 	
 
 	public static function scan($check_session = true, $show_results = true)
 	{
-		set_time_limit ( 3600 );
+		error_reporting(0);
+		$tmp_result = set_time_limit ( 3600 );
 		
-		$error_msg = 'Start Scan Process';
+		$error_msg = 'Start Scan Process ver. '.self::$antivirus_version;
 		if (self::$debug) self::DebugLog($error_msg, true);
+		
+		$error_msg = 'Change Time limit '.self::$bool_list[intval($tmp_result)];
+		if (self::$debug) self::DebugLog($error_msg);
+		
+		$error_msg = 'Current Time limit '.ini_get('max_execution_time');
+		if (self::$debug) self::DebugLog($error_msg);
 		
 		
 		include_once(dirname(__FILE__).'/HttpClient.class.php');
@@ -34,13 +45,28 @@ class SGAntiVirus_module
 		}*/
 		
 		
+		$membership = trim($_POST['membership']);
 		$scan_path = trim($_POST['scan_path']);
 		$access_key = trim($_POST['access_key']);
 		//$do_evristic = intval($_POST['do_evristic']);
 		$do_evristic = 1;
 		$domain = trim($_POST['domain']);
 		$email = trim($_POST['email']);
-		$session_report_key = md5($domain.'-'.rand(1,100).'-'.time());
+		$session_report_key = trim($_POST['session_report_key']); 
+		
+			// Some logs
+			$error_msg = 'Domain: '.$domain;
+			if (self::$debug) self::DebugLog($error_msg);
+			
+			$error_msg = 'Scan path: '.$scan_path;
+			if (self::$debug) self::DebugLog($error_msg);
+			
+			$error_msg = 'Session report key: '.$session_report_key;
+			if (self::$debug) self::DebugLog($error_msg);
+			
+			$error_msg = 'TMP folder - '.dirname(__FILE__).'/tmp/';
+			if (self::$debug) self::DebugLog($error_msg);
+			
 		
 		//session_start();
 		$current_task = 0;
@@ -64,7 +90,7 @@ class SGAntiVirus_module
 		$current_task += 1;
 		self::UpdateProgressValue($current_task, $total_tasks, 'Initialization.');
 		
-		
+
 		$error_msg = 'Start - Packing block';
 		if (self::$debug) self::DebugLog($error_msg);
 		
@@ -89,6 +115,9 @@ class SGAntiVirus_module
 		
 		if (!$ssh_flag) 
 		{
+			$error_msg = 'ZipArchive method - started';
+			if (self::$debug) self::DebugLog($error_msg);
+			
 			// PHP way
 		    if (class_exists('ZipArchive'))
 		    {
@@ -109,6 +138,8 @@ class SGAntiVirus_module
 		            foreach ($iterator as $key=>$value) 
 		            {
 				        $file_ext = strtolower( substr( $key, strrpos($key, ".") ) );
+				        
+				        if (self::$debug) self::ZipArchive_last_file_log($key.'='.$value);
 				        
 				        if ($file_ext == '.php' || $file_ext == '.php4' || $file_ext == '.php5' || $file_ext == '.phtml' || $file_ext == '.html' || 
 							$file_ext == '.js' || $file_ext == '.cgi' || $file_ext == '.pl' ) 
@@ -131,17 +162,24 @@ class SGAntiVirus_module
 		            //$result['msg'][] = 'Archive created successfully'; 
 		        }
 		        else {
-		        	echo 'Error: Couldnt open ZIP archive.';
-		            self::UpdateProgressValue($current_task, $total_tasks, 'Error: Couldnt open ZIP archive.');
-		            exit;
+		        	$error_msg = 'Error: Couldnt open ZIP archive.';
+		        	echo $error_msg;
+		            self::UpdateProgressValue($current_task, $total_tasks, $error_msg);
+					if (self::$debug) self::DebugLog($error_msg);
+					exit;
 		        }
 		
 		    }
 		    else {
-		    	echo 'Error: ZipArchive class is not exist.';
-		        self::UpdateProgressValue($current_task, $total_tasks, 'Error: ZipArchive class is not exist.');
+		    	$error_msg =  'Error: ZipArchive class is not exist.';
+		    	echo $error_msg;
+		        self::UpdateProgressValue($current_task, $total_tasks, $error_msg);
+		        if (self::$debug) self::DebugLog($error_msg);
 		        exit;
 		    }
+		    
+			$error_msg = 'ZipArchive method - finished';
+			if (self::$debug) self::DebugLog($error_msg);
 		}
 		// Update progress
 		$current_task += 1;
@@ -175,7 +213,10 @@ class SGAntiVirus_module
 		if (self::$debug) self::DebugLog($error_msg);
 		
 		$tar_size = filesize($archive_filename);
-		if ($tar_size < 32 * 1024 * 1024)
+		$error_msg = 'Pack file is '.round($tar_size/1024/1024, 2).'Mb';
+		if (self::$debug) self::DebugLog($error_msg);
+		
+		if ($tar_size < 32 * 1024 * 1024 || $membership == 'pro')
 		{
 			// Send file
 			$post_data = base64_encode(json_encode(array(
@@ -202,7 +243,7 @@ class SGAntiVirus_module
 			
 		}
 		else {
-			$error_msg = 'Pack file is too big, please contact SiteGuarding.com support';
+			$error_msg = 'Pack file is too big ('.$error_msg.'), please contact SiteGuarding.com support or upgrade to PRO version.';
 			if (self::$debug) self::DebugLog($error_msg);
 			echo $error_msg;
 			exit;
@@ -360,10 +401,37 @@ class SGAntiVirus_module
 		fwrite($fp, json_encode($a));
 		fclose($fp);
 		
-		return $val."|".$val_txt;
+		switch ($val)
+		{
+			case 85:
+			case 90:
+			case 95:
+				$try_external_report = 1;
+				break;
+				
+			default:
+				$try_external_report = 0;
+				break;
+		}
+		
+		return $val."|".$val_txt."|".$try_external_report;
 	}
 	
 	
+	public static function getReportText()
+	{
+		if (!isset($_POST['session_report_key'])) exit();
+		
+		$report_id = trim($_POST['session_report_key']);
+		
+		$content = file_get_contents('https://www.siteguarding.com/ext/antivirus/index.php?action=get_report_online&session_report_key='.$report_id);
+		
+		$report_info = json_decode($content, true);
+		if ($report_info['status'] == 'ready') return $report_info['text'];
+		else return '';
+	}
+
+
 	public static function UploadSingleFile($file, $action, $post_data)
 	{
 		$target_url = self::$SITEGUARDING_SERVER.'?action='.$action;
@@ -551,6 +619,14 @@ class SGAntiVirus_module
 	{
 		if ($clean_log_file) $fp = fopen(dirname(__FILE__).'/tmp/debug.log', 'w');
 		else $fp = fopen(dirname(__FILE__).'/tmp/debug.log', 'a');
+		$a = date("Y-m-d H:i:s")." ".$txt."\n";
+		fwrite($fp, $a);
+		fclose($fp);
+	}
+	
+	public static function ZipArchive_last_file_log($txt)
+	{
+		$fp = fopen(dirname(__FILE__).'/tmp/zip_debug.log', 'w');
 		$a = date("Y-m-d H:i:s")." ".$txt."\n";
 		fwrite($fp, $a);
 		fclose($fp);
