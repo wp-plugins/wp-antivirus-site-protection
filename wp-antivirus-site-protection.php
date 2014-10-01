@@ -3,7 +3,7 @@
 Plugin Name: WP Antivirus Site Protection (by SiteGuarding.com)
 Plugin URI: http://www.siteguarding.com/en/website-extensions
 Description: Adds more security for your WordPress website. Server-side scanning. Performs deep website scans of all the files. Virus and Malware detection.
-Version: 4.0
+Version: 4.1
 Author: SiteGuarding.com (SafetyBis Ltd.)
 Author URI: http://www.siteguarding.com
 License: GPLv2
@@ -34,13 +34,19 @@ if( !is_admin() ) {
 					exit;
 				}
 				
+				$license_info = SGAntiVirus::GetLicenseInfo(get_site_url(), $access_key);
+				$session_report_key = md5($domain.'-'.rand(1,1000).'-'.time());
+				
+				SGAntiVirus_module::MembershipFile($license_info['membership'], $license_info['scans'], $params['show_protectedby']);
+				
 				// Prepare scan
 				$_POST['scan_path'] = ABSPATH;
 				$_POST['access_key'] = $access_key;
 				$_POST['do_evristic'] = $params['do_evristic'];
 				$_POST['domain'] = get_site_url();
 				$_POST['email'] = get_option( 'admin_email' );
-				
+				$_POST['session_report_key'] = $session_report_key;
+				$_POST['membership'] = $license_info['membership'];
 				
 				// Start scan
 				SGAntiVirus_module::scan(false, false);
@@ -68,18 +74,42 @@ if( !is_admin() ) {
 					exit;
 				}
 				
+				
 				$license_info = SGAntiVirus::GetLicenseInfo(get_site_url(), $params['access_key']);
 	
 				if ($license_info === false) { exit; }
 				
-				$a = SGAntiVirus::SendFilesForAnalyze($license_info['last_scan_files'], $license_info['email'] );
+				
+				if (intval($_GET['showcontent']) == 1)
+				{
+					SGAntiVirus::ShowFilesForAnalyze($license_info['last_scan_files']);
+					exit;
+				}
+				
+
+				
+				$a = SGAntiVirus::SendFilesForAnalyze( $license_info['last_scan_files'], $license_info['email'] );
 				if ($a === true)
 				{
-					SGAntiVirus_module::DebugLog('Files sent for analyze. You will get report by email '.$license_info['email'].' Files:'.print_r( $license_info['last_scan_files'],true));
+					$tmp_txt = 'Files sent for analyze. You will get report by email '.$license_info['email'].' Files:'.print_r( $license_info['last_scan_files'],true);
+					
+					$result_txt = array(
+						'status' => 'OK',
+						'description' => $tmp_txt
+					);
+					SGAntiVirus_module::DebugLog($tmp_txt);
 				}
 				else {
-					SGAntiVirus_module::DebugLog('Operation is failed. Nothing sent for analyze. Files:'.print_r( $license_info['last_scan_files'],true) );
+					$tmp_txt = 'Operation is failed. Nothing sent for analyze. Files:'.print_r( $license_info['last_scan_files'],true);
+					
+					$result_txt = array(
+						'status' => 'ERROR',
+						'description' => $tmp_txt
+					);
+					SGAntiVirus_module::DebugLog($tmp_txt);
 				}
+				
+				echo json_encode($result_txt);
 		}
 		
 		exit;
@@ -139,6 +169,8 @@ if( !is_admin() ) {
 	{
 		error_reporting(0);
 		
+		include_once(dirname(__FILE__).'/sgantivirus.class.php');
+		
 		$access_key = trim($_GET['access_key']);
 	
 		$params = plgwpavp_GetExtraParams();
@@ -147,7 +179,8 @@ if( !is_admin() ) {
 		{
 			$a = array(
 				'status' => 'ok',
-				'answer' => md5($_GET['answer'])
+				'answer' => md5($_GET['answer']),
+				'version' => SGAntiVirus_module::$antivirus_version
 			);
 			
 			echo json_encode($a);
@@ -156,7 +189,7 @@ if( !is_admin() ) {
 		exit;
 	}
 	
-	
+	/*
 	function plgavp_login_head_add_field()
 	{
 		$params = plgwpavp_GetExtraParams();
@@ -170,9 +203,22 @@ if( !is_admin() ) {
 		
 	}
 	add_action( 'login_head', 'plgavp_login_head_add_field' );
-	
-	
+	*/
+
+	// Show Protected by
+	function plgavp_footer_protectedby() 
+	{
+		if ( file_exists( dirname(__FILE__).'/tmp/membership.log'))
+		{
+			?>
+				<div style="font-size:10px; padding:0 2px;position: fixed;bottom:0;right:0;z-index:1000;text-align:center;background-color:#F1F1F1;color:#222;opacity:0.8;">Protected with <a style="color:#4B9307" href="https://www.siteguarding.com/en/website-antivirus" target="_blank" title="Security service that protects your website against malware and hacker exploits. Website Antivirus protection.">SiteGuarding.com Antivirus</a></div>
+			<?php
+		}	
+	}
+	add_action('wp_footer', 'plgavp_footer_protectedby', 100);
+
 }
+
 
 
 
@@ -296,7 +342,6 @@ if( is_admin() ) {
 			SGAntiVirus::ShowMessage('Main antivirus scanner module is not loaded. Please try again.');
 			return;
 		}
-		
 		
 		wp_enqueue_style( 'plgavp_LoadStyle' );
 		
@@ -433,6 +478,7 @@ if( is_admin() ) {
 		// Get params
 		$params = plgwpavp_GetExtraParams();
 		
+		
 		// Check if website is registered
 		//SGAntiVirus::page_ConfirmRegistration(); return;
 		if (!isset($params['registered']) || intval($params['registered']) == 0) { SGAntiVirus::page_ConfirmRegistration(); return; }
@@ -451,6 +497,13 @@ if( is_admin() ) {
 		echo '</pre>';
 		*/
 		
+		
+
+		global $avp_license_info;
+		SGAntiVirus_module::MembershipFile($avp_license_info['membership'], $avp_license_info['scans'], $params['show_protectedby']);
+
+
+
 		foreach ($license_info as $k => $v)
 		{
 			$params[$k] = $v;	
@@ -1039,6 +1092,51 @@ function plgwpavp_SetExtraParams($data = array())
 
 class SGAntiVirus {
 	
+	public static function ShowFilesForAnalyze($files_array = array())
+	{
+		$files = array();
+		
+		if (count($files_array['main']))
+		{
+			foreach ($files_array['main'] as $k => $filename)
+			{
+				$files[$filename] = $filename;	
+			}
+		}
+		if (count($files_array['heuristic']))
+		{
+			foreach ($files_array['heuristic'] as $k => $filename)
+			{
+				$files[$filename] = $filename;	
+			}
+		}
+		
+		sort($files);
+		
+		echo '<pre>';
+		print_r($files);
+		echo '</pre>';
+		
+		echo '<br><br>';
+		
+		if (count($files))
+		{
+			foreach ($files as $file)
+			{
+				$file_full_path = ABSPATH.'/'.$file;
+				echo $file_full_path.' Filesize: '.filesize($file_full_path).' bytes<br><br>';
+				$handle = fopen($file_full_path, "r");
+				$content =  fread($handle, filesize($file_full_path));
+				echo 'Content: <pre>'.$content.'</pre>';
+				fclose($handle);
+				
+				echo '<br><br><hr><br><br>';
+			}
+		}
+		
+		
+	}
+	
 	public static function SendFilesForAnalyze($files_array = array(), $email_from)
 	{
 		$result = false;
@@ -1263,7 +1361,7 @@ if (intval($params['scans']) == 0 || $params['membership'] == 'free') {
 <div class="divCell">
 
 <p>
-You have: <b><?php echo ucwords($params['membership']); ?> version</b><br />
+You have: <b><?php echo ucwords($params['membership']); ?> version</b> (ver. <?php echo SGAntiVirus_module::$antivirus_version; ?>)<br />
 
 Available Scans: <?php echo $params['scans']; ?><br />
 Valid till: <?php echo $params['exp_date']."&nbsp;&nbsp;"; 
