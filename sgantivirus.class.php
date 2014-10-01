@@ -2,13 +2,15 @@
 
 class SGAntiVirus_module
 {
-	public static  $antivirus_version = '4.0';
+	public static  $antivirus_version = '4.1';
 	
 	public static  $debug = true;
 	
 	public static  $bool_list = array(0 => 'FALSE', 1 => 'TRUE');
 	
 	public static $SITEGUARDING_SERVER = 'http://www.siteguarding.com/ext/antivirus/index.php';
+	
+	public static $file_membership = '/tmp/membership.log';
 	
 
 	public static function scan($check_session = true, $show_results = true)
@@ -66,6 +68,10 @@ class SGAntiVirus_module
 			
 			$error_msg = 'TMP folder - '.dirname(__FILE__).'/tmp/';
 			if (self::$debug) self::DebugLog($error_msg);
+			
+		if (trim($domain) == '') {echo 'Domain is empty. Please contact SiteGuarding.com support.';exit;}
+		if (trim($session_report_key) == '') {echo 'Session key is empty. Please contact SiteGuarding.com support.';exit;}
+		if (trim($scan_path) == '') {echo 'Scan Path is empty. Please contact SiteGuarding.com support.';exit;}
 			
 		
 		//session_start();
@@ -613,6 +619,23 @@ class SGAntiVirus_module
 		mail($to, $subject, $body_message, $headers);
 	}
 	
+	
+	
+	
+	public static function MembershipFile($membership, $scans, $show_protectedby)
+	{
+		$filename = dirname(__FILE__).self::$file_membership;
+		if ( ($membership == 'pro' || ($membership == 'trial' && $scans > 10)) && ($show_protectedby == 0) ) 
+		{
+			if (file_exists($filename))	unlink($filename);
+		}
+		else
+		{
+			$fp = fopen($filename, 'w');
+			fwrite($fp, $membership.":".$scans);
+			fclose($fp);	
+		}
+	}
 	
 	
 	public static function DebugLog($txt, $clean_log_file = false)
