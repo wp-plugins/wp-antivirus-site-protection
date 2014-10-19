@@ -2,7 +2,7 @@
 
 class SGAntiVirus_module
 {
-	public static  $antivirus_version = '4.1';
+	public static  $antivirus_version = '4.2';
 	
 	public static  $debug = true;
 	
@@ -69,9 +69,9 @@ class SGAntiVirus_module
 			$error_msg = 'TMP folder - '.dirname(__FILE__).'/tmp/';
 			if (self::$debug) self::DebugLog($error_msg);
 			
-		if (trim($domain) == '') {echo 'Domain is empty. Please contact SiteGuarding.com support.';exit;}
-		if (trim($session_report_key) == '') {echo 'Session key is empty. Please contact SiteGuarding.com support.';exit;}
-		if (trim($scan_path) == '') {echo 'Scan Path is empty. Please contact SiteGuarding.com support.';exit;}
+		if (trim($domain) == '') {$error_msg = 'Domain is empty. Please contact SiteGuarding.com support.';echo $error_msg;if (self::$debug) self::DebugLog($error_msg);exit;}
+		if (trim($session_report_key) == '') {$error_msg = 'Session key is empty. Please contact SiteGuarding.com support.';echo $error_msg;if (self::$debug) self::DebugLog($error_msg);exit;}
+		if (trim($scan_path) == '') {$error_msg = 'Scan Path is empty. Please contact SiteGuarding.com support.';echo $error_msg;if (self::$debug) self::DebugLog($error_msg);exit;}
 			
 		
 		//session_start();
