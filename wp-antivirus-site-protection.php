@@ -932,7 +932,11 @@ if( is_admin() ) {
 				$data['registered'] = 1;
 				$data['email'] = get_option( 'admin_email' );
 			}
+			
 			$data['show_protectedby'] = intval($_POST['show_protectedby']);
+			
+			global $avp_license_info;
+			if ($avp_license_info['membership'] == 'free') $data['show_protectedby'] = 1;
 			
 			plgwpavp_SetExtraParams($data);
 			

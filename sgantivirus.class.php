@@ -2,18 +2,17 @@
 
 class SGAntiVirus_module
 {
-	public static  $antivirus_version = '4.3';
+	public static  $antivirus_version = '4.4';
 	public static  $antivirus_platform = 'wordpress';
 	
 	public static  $debug = true;
+	public static  $debug_filelist = false;
 	
 	public static  $bool_list = array(0 => 'FALSE', 1 => 'TRUE');
 	
 	public static $SITEGUARDING_SERVER = 'http://www.siteguarding.com/ext/antivirus/index.php';
 	
 	public static $file_membership = '/tmp/membership.log';
-	
-	public static  $exclude_folders = array();
 	
 
 	public static function AntivirusFinished()
@@ -29,7 +28,18 @@ class SGAntiVirus_module
 	public static function scan($check_session = true, $show_results = true)
 	{
 		error_reporting(0);
+		ini_set('memory_limit', '256M');
+		
 		register_shutdown_function('self::AntivirusFinished');
+		
+		if (file_exists(dirname(__FILE___).'/exclude_folders.php'))
+		{
+			$error_msg = 'Exclude folder file loaded';
+			if (self::$debug) self::DebugLog($error_msg, true);
+			
+			require_once(dirname(__FILE___).'/exclude_folders.php');	
+		}
+		
 		
 		if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') define(DIRSEP, '\\');
 		else define(DIRSEP, '/');
@@ -43,6 +53,9 @@ class SGAntiVirus_module
 		if (self::$debug) self::DebugLog($error_msg);
 		
 		$error_msg = 'Current Time limit '.ini_get('max_execution_time');
+		if (self::$debug) self::DebugLog($error_msg);
+		
+		$error_msg = 'Current Memory limit '.ini_get('memory_limit');
 		if (self::$debug) self::DebugLog($error_msg);
 
 		$error_msg = 'OS info: '.PHP_OS.' ('.php_uname().')';
@@ -137,7 +150,6 @@ class SGAntiVirus_module
 		$files_list = array();
 
 		// Prepare exclude folders
-		$exclude_folders = self::$exclude_folders;
 		if (count($exclude_folders))
 		{
 			foreach ($exclude_folders as $k => $ex_folder)
@@ -150,6 +162,12 @@ class SGAntiVirus_module
 
 		$error_msg = 'Excluded Folders: '.count($exclude_folders);
 		if (self::$debug) self::DebugLog($error_msg);
+		
+		if (self::$debug_filelist)
+		{
+			$collected_filelist = dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'filelist.txt';
+			$fp = fopen($collected_filelist, 'w');
+		}
 
 		// Collect all files
 		while(count($path) != 0)
@@ -197,23 +215,62 @@ class SGAntiVirus_module
 						case '.cgi':
 						case '.pl':
 							
-							$files_list[] = str_replace(SCAN_PATH, "", $item);
+							$item = str_replace(SCAN_PATH, "", $item);
+							if (self::$debug_filelist)
+							{
+								fwrite($fp, $item."\n");
+							}
+							else $files_list[] = $item;
 							break;
 					}
 				}
 			}
 		}
 
+
+
 		// Collect all hidden files
-	    function glob_recursive($directory, &$directories = array()) {
-	        foreach(glob($directory, GLOB_ONLYDIR | GLOB_NOSORT) as $folder) {
-	            $directories[] = $folder;
-	            glob_recursive("{$folder}/*", $directories);
+		$error_msg = 'Start collecting the hidden files';
+		if (self::$debug) self::DebugLog($error_msg);
+		
+		
+	    function glob_recursive($directory, $exclude_folders = array(), &$directories = array()) 
+		{
+	        foreach(glob($directory, GLOB_ONLYDIR | GLOB_NOSORT) as $folder) 
+			{
+             	// Check in exludes
+             	if (count($exclude_folders) > 0)
+             	{
+             		$folder = str_replace(DIRSEP.DIRSEP, DIRSEP, $folder);
+             		
+             		$flag_exclude = false;
+             		foreach ($exclude_folders as $excl_folder)
+             		{
+             			if ( strpos($folder.DIRSEP, $excl_folder ) !== false)
+             			{
+             				// This folder must be excluded
+             				$flag_exclude = true;
+             				break;
+             			}
+             		}
+             		if ($flag_exclude === false) 
+					{
+						$directories[] = $folder . DIRSEP . '*';
+						if (SGAntiVirus_module::$debug && SGAntiVirus_module::$debug_filelist) SGAntiVirus_module::DebugLog('+++ '.$folder . DIRSEP);
+					}
+					//else if (SGAntiVirus_module::$debug && SGAntiVirus_module::$debug_filelist) SGAntiVirus_module::DebugLog('--- '.$folder . DIRSEP);
+             	}
+				else { 
+					$directories[] = $folder . DIRSEP . '*'; 
+					//if (SGAntiVirus_module::$debug) SGAntiVirus_module::DebugLog('+++ '.$folder . DIRSEP);
+				}
+				
+	            glob_recursive("{$folder}/*", $exclude_folders, $directories);
 	        }
 	    }
 
 		$directory = SCAN_PATH;
-	    glob_recursive($directory, $directories);
+	    glob_recursive($directory, $exclude_folders, $directories);
 	    foreach($directories as $directory) 
 		{
             foreach(glob("{$directory}/.*") as $file) 
@@ -223,31 +280,44 @@ class SGAntiVirus_module
             	{
             		$file = str_replace(SCAN_PATH, "", $file);
             		if ($file[0] == DIRSEP) $file[0] = " ";
-            		$files_list[] = trim($file);
+            		$file = trim($file);
+            		
+					if (self::$debug_filelist)
+					{
+						fwrite($fp, trim($file)."\n");
+					}
+					else $files_list[] = $file;
             	}
             }
 	    }
 
-	    
+		if (self::$debug_filelist)
+		{
+			fclose($fp);
+		}
 	    
 		$error_msg = 'Save collected file list';
 		if (self::$debug) self::DebugLog($error_msg);
 		
-		$collected_filelist = dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'filelist.txt';
-		$fp = fopen($collected_filelist, 'w');
-		$status = fwrite($fp, implode("\n", $files_list));
-		fclose($fp);
-		if ($status === false)
+		if (!self::$debug_filelist)
 		{
-			$error_msg = 'Cant save information about the collected file';
+			$collected_filelist = dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'filelist.txt';
+			$fp = fopen($collected_filelist, 'w');
+			$status = fwrite($fp, implode("\n", $files_list));
+			fclose($fp);
+			if ($status === false)
+			{
+				$error_msg = 'Cant save information about the collected file';
+				if (self::$debug) self::DebugLog($error_msg);
+				echo $error_msg;
+				exit;
+			}
+			
+			$error_msg = 'Total files: '.count($files_list);
 			if (self::$debug) self::DebugLog($error_msg);
-			echo $error_msg;
-			exit;
 		}
 		
-		$error_msg = 'Total files: '.count($files_list);
-		if (self::$debug) self::DebugLog($error_msg);
-		
+
 	
 		if ($ssh_flag)
 		{
@@ -546,6 +616,8 @@ class SGAntiVirus_module
 		
 		if (file_exists(dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'flag_terminated.tmp')) $try_external_report = 1;
 		else $try_external_report = 0;
+		
+		if ($new_val == 90 || $new_val == 100) $try_external_report = 1;
 		
 		return $val."|".$val_txt."|".$try_external_report;
 	}
