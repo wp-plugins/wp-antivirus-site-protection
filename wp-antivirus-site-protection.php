@@ -3,19 +3,89 @@
 Plugin Name: WP Antivirus Site Protection (by SiteGuarding.com)
 Plugin URI: http://www.siteguarding.com/en/website-extensions
 Description: Adds more security for your WordPress website. Server-side scanning. Performs deep website scans of all the files. Virus and Malware detection.
-Version: 4.2
+Version: 4.3
 Author: SiteGuarding.com (SafetyBis Ltd.)
 Author URI: http://www.siteguarding.com
 License: GPLv2
 TextDomain: plgavp
 */
 define( 'SITEGUARDING_SERVER', 'http://www.siteguarding.com/ext/antivirus/index.php');
+define( 'SITEGUARDING_SERVER_IP1', '185.72.156.128');
+define( 'SITEGUARDING_SERVER_IP2', '185.72.156.129');
+
+if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') define(DIRSEP, '\\');
+else define(DIRSEP, '/');
 
 //error_reporting(E_ERROR | E_WARNING);
 //error_reporting(E_ERROR);
 
 // Cron check
-if( !is_admin() ) {
+if( !is_admin() ) 
+{
+	if ( isset($_GET['task']) && $_GET['task'] == 'upgrade' )
+	{
+		error_reporting(0);
+		
+		$access_key = trim($_GET['access_key']);
+	
+		$params = plgwpavp_GetExtraParams();
+	
+		if ($params['access_key'] == $access_key && ($_SERVER["REMOTE_ADDR"] == SITEGUARDING_SERVER_IP1 || $_SERVER["REMOTE_ADDR"] == SITEGUARDING_SERVER_IP2))
+		{
+				include_once(dirname(__FILE__).DIRSEP.'sgantivirus.class.php');
+				
+				if (!class_exists('SGAntiVirus_module'))
+				{
+					// Error module is not loaded
+					exit;
+				}
+				
+				$license_info = SGAntiVirus::GetLicenseInfo(get_site_url(), $access_key);
+				$version = $_GET['version'];
+				
+				// Download version from Wordpress.org
+				$result = SGAntiVirus::DownloadFromWordpress($version);
+				if ($result === false) die('Cant download new version from wordpress.org');
+				
+				// Update
+				/*if (function_exists('system'))
+				{
+					$extract_path = ABSPATH.'plugins'.DIRSEP.'1'.DIRSEP;
+					$cmd = "unzip ".dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'update.zip'." -d ".$extract_path;
+					echo $cmd;
+					system($cmd);
+				}
+				else */if (class_exists('ZipArchive'))
+			    {
+			    	$zip = new ZipArchive;
+					if ($zip->open(dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'update.zip') === TRUE) {
+						$extract_path = ABSPATH.'wp-content'.DIRSEP.'plugins'.DIRSEP;
+						
+						//echo "Extract path: ".$extract_path."<br>";
+						
+					    $unzip_status = $zip->extractTo($extract_path);
+					    
+					    /*for($i = 0; $i < $zip->numFiles; $i++) 
+						{
+							$filename = $zip->getNameIndex($i);
+							echo $filename."<br>";
+					        $zip->extractTo($extract_path, array($zip->getNameIndex($i)));
+					    }*/
+    
+					    $zip->close();
+					    if ($unzip_status === false) echo 'Unzip failed'."<br>";
+					    echo 'Update finished'."<br>";
+					} else {
+					    echo 'Update failed'."<br>";
+					}
+		    	}
+		}
+		else die('access_key or IP is not correct');
+		
+		exit;
+	}
+	
+	
 	if ( isset($_GET['task']) && $_GET['task'] == 'cron' )
 	{
 		error_reporting(0);
@@ -26,7 +96,7 @@ if( !is_admin() ) {
 	
 		if ($params['access_key'] == $access_key)
 		{
-				include_once(dirname(__FILE__).'/sgantivirus.class.php');
+				include_once(dirname(__FILE__).DIRSEP.'sgantivirus.class.php');
 				
 				if (!class_exists('SGAntiVirus_module'))
 				{
@@ -66,18 +136,19 @@ if( !is_admin() ) {
 	
 		if ($params['access_key'] == $access_key)
 		{
-				include_once(dirname(__FILE__).'/sgantivirus.class.php');
+				include_once(dirname(__FILE__).DIRSEP.'sgantivirus.class.php');
 				
 				if (!class_exists('SGAntiVirus_module'))
 				{
 					// Error module is not loaded
+					echo 'Error module is not loaded';
 					exit;
 				}
 				
 				
 				$license_info = SGAntiVirus::GetLicenseInfo(get_site_url(), $params['access_key']);
 	
-				if ($license_info === false) { exit; }
+				if ($license_info === false) { echo 'Wrong access_key'; exit; }
 				
 				
 				if (intval($_GET['showcontent']) == 1)
@@ -87,7 +158,6 @@ if( !is_admin() ) {
 				}
 				
 
-				
 				$a = SGAntiVirus::SendFilesForAnalyze( $license_info['last_scan_files'], $license_info['email'] );
 				if ($a === true)
 				{
@@ -125,9 +195,9 @@ if( !is_admin() ) {
 	
 		$params = plgwpavp_GetExtraParams();
 	
-		if ($params['access_key'] == $access_key)
+		if ($params['access_key'] == $access_key && ($_SERVER["REMOTE_ADDR"] == SITEGUARDING_SERVER_IP1 || $_SERVER["REMOTE_ADDR"] == SITEGUARDING_SERVER_IP2))
 		{
-				include_once(dirname(__FILE__).'/sgantivirus.class.php');
+				include_once(dirname(__FILE__).DIRSEP.'sgantivirus.class.php');
 				
 				if (!class_exists('SGAntiVirus_module'))
 				{
@@ -159,6 +229,7 @@ if( !is_admin() ) {
 				}
 				
 		}
+		else die('access_key or IP is not correct');
 		
 		exit;
 	}
@@ -169,7 +240,7 @@ if( !is_admin() ) {
 	{
 		error_reporting(0);
 		
-		include_once(dirname(__FILE__).'/sgantivirus.class.php');
+		include_once(dirname(__FILE__).DIRSEP.'sgantivirus.class.php');
 		
 		$access_key = trim($_GET['access_key']);
 	
@@ -188,6 +259,57 @@ if( !is_admin() ) {
 		
 		exit;
 	}
+	
+	
+	if ( isset($_GET['task']) && $_GET['task'] == 'view_file' )
+	{
+		error_reporting(0);
+		
+		include_once(dirname(__FILE__).DIRSEP.'sgantivirus.class.php');
+		
+		$access_key = trim($_GET['access_key']);
+	
+		$params = plgwpavp_GetExtraParams();
+	
+		if ($params['access_key'] == $access_key && ($_SERVER["REMOTE_ADDR"] == SITEGUARDING_SERVER_IP1 || $_SERVER["REMOTE_ADDR"] == SITEGUARDING_SERVER_IP2))
+		{
+			$filename = $_GET['file'];
+			
+			switch ($filename)
+			{
+				case 'debug':
+					$filename = dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'debug.log';
+					break;
+					
+				case 'filelist':
+					$filename = dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'filelist.txt';
+					break;
+					
+				default:
+					$filename = ABSPATH.$filename;
+			}
+			
+			echo "\n\n";
+			
+			if (file_exists($filename)) echo 'File exists: '.$filename."\n";
+			else {echo 'File is absent: '.$filename."\n\n"; exit;}
+			
+			echo 'File size: '.filesize($filename)."\n";
+			echo 'File MD5: '.strtoupper(md5_file($filename))."\n\n";
+			
+			$handle = fopen($filename, "r");
+			$contents = fread($handle, filesize($filename));
+			fclose($handle);
+			echo '----- File Content [start] -----'."\n";
+			echo $contents;
+			echo '----- File Content [end] -----'."\n";
+		}
+		else die('access_key or IP is not correct');
+		
+		exit;
+	}
+	
+	
 	
 	/*
 	function plgavp_login_head_add_field()
@@ -208,7 +330,7 @@ if( !is_admin() ) {
 	// Show Protected by
 	function plgavp_footer_protectedby() 
 	{
-		if ( file_exists( dirname(__FILE__).'/tmp/membership.log'))
+		if ( file_exists( dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'membership.log'))
 		{
 			?>
 				<div style="font-size:10px; padding:0 2px;position: fixed;bottom:0;right:0;z-index:1000;text-align:center;background-color:#F1F1F1;color:#222;opacity:0.8;">Protected with <a style="color:#4B9307" href="https://www.siteguarding.com/en/website-antivirus" target="_blank" title="Security service that protects your website against malware and hacker exploits. Website Antivirus protection.">SiteGuarding.com Antivirus</a></div>
@@ -226,6 +348,13 @@ if( is_admin() ) {
 	
 	error_reporting(0);
 	
+/*	function wp_antivirus_admin_menu() 
+	{
+		echo '111111111111';
+		//load_menu();
+	}
+	
+	add_action( 'admin_menu', 'wp_antivirus_admin_menu');*/
 	
 	function plgwpavp_activation()
 	{
@@ -312,16 +441,55 @@ if( is_admin() ) {
 			$avp_alert_txt = '<span class="update-plugins"><span class="update-count">'.$avp_alert_main.'/'.$avp_alert_heuristic.'</span></span>';	
 		} 
 		else $avp_alert_txt = '';
+		
+		
+		if ($avp_alert_main > 0 || $avp_alert_heuristic > 0)
+		{
+			$avp_eachpage_alert_txt = '<b>Antivirus Important Notice:</b>';
+			if ($avp_alert_main > 0)
+			{
+				$avp_eachpage_alert_txt .= ' Virus code detected: '.$avp_alert_main.' file(s).'; 
+			}
+			if ($avp_alert_heuristic > 0)
+			{
+				$avp_eachpage_alert_txt .= ' Unsafe code detected: '.$avp_alert_heuristic.' file(s).'; 
+			}
+		} 
+		else if ($avp_license_info['membership'] != 'pro' && $avp_license_info['membership'] != 'trial') $avp_eachpage_alert_txt .= '<b>Antivirus Important Notice:</b> Your license is expired and antivirus has limits. Some features are disabled.';
+			else  $avp_eachpage_alert_txt = '';
+		
+		if ($avp_license_info['membership'] != 'pro' && $avp_license_info['membership'] != 'trial') $avp_eachpage_alert_txt .= '';
 	}
 	
 	
 
 	add_action('admin_menu', 'register_plgavp_settings_page');
 
+	
+	function antivirus_admin_notice() 
+	{
+		global $avp_eachpage_alert_txt;
+		
+		if ($avp_eachpage_alert_txt != '') 
+		{
+	    ?>
+		    <div class="error">
+		        <p style="color:#DD3D36;font-size:20px;"><?php echo $avp_eachpage_alert_txt; ?></p>
+		        <p><a href="/wp-admin/admin.php?page=plgavp_Antivirus">View details</a></p>
+		    </div>
+		    <?php
+	    }
+	}
+	add_action( 'admin_notices', 'antivirus_admin_notice' );
+
+
+
+
 	function register_plgavp_settings_page() 
 	{
 		global $avp_alert_txt;
-		add_menu_page('plgavp_Antivirus', 'Antivirus'.$avp_alert_txt, 'activate_plugins', 'plgavp_Antivirus', 'plgavp_settings_page_callback', plugins_url('images/', __FILE__).'antivirus-logo.png'); 
+		
+		add_menu_page('plgavp_Antivirus', 'Antivirus'.$avp_alert_txt, 'activate_plugins', 'plgavp_Antivirus', 'plgavp_settings_page_callback', plugins_url('images/', __FILE__).'antivirus-logo.png');
 	}
 
 	function plgavp_settings_page_callback() 
@@ -764,7 +932,11 @@ if( is_admin() ) {
 				$data['registered'] = 1;
 				$data['email'] = get_option( 'admin_email' );
 			}
+			
 			$data['show_protectedby'] = intval($_POST['show_protectedby']);
+			
+			global $avp_license_info;
+			if ($avp_license_info['membership'] == 'free') $data['show_protectedby'] = 1;
 			
 			plgwpavp_SetExtraParams($data);
 			
@@ -1092,6 +1264,30 @@ function plgwpavp_SetExtraParams($data = array())
 
 class SGAntiVirus {
 	
+	public static function DownloadFromWordpress($version)
+	{
+		$dst = fopen(dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'update.zip', 'w');
+		$ch = curl_init();
+		 curl_setopt($ch, CURLOPT_URL, 'https://downloads.wordpress.org/plugin/wp-antivirus-site-protection.'.$version.'.zip' );
+		 curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/4.0 (compatible; MSIE 5.01; Windows NT 5.0)");
+		 //curl_setopt($ch, CURLOPT_HEADER, true);
+		 curl_setopt($ch, CURLOPT_TIMEOUT, 3600);
+		 curl_setopt($ch, CURLOPT_TIMEOUT_MS, 3600000);
+		 curl_setopt($ch, CURLOPT_FILE, $dst);
+		 //!dont need curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+         //curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($ch, CURLOPT_FAILONERROR, true);
+		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10); // 10 sec
+		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT_MS, 10000); // 10 sec
+		curl_setopt($ch, CURLOPT_BINARYTRANSFER, 1);
+		//*** maybe need */curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+
+		 $a = curl_exec($ch);
+		 curl_close($ch);
+         if ($a === false) return false;
+         else return true;
+	}
+	
 	public static function ShowFilesForAnalyze($files_array = array())
 	{
 		$files = array();
@@ -1137,8 +1333,10 @@ class SGAntiVirus {
 		
 	}
 	
-	public static function SendFilesForAnalyze($files_array = array(), $email_from)
+	public static function SendFilesForAnalyze($files_array = array(), $email_from = 'dontreply@siteguarding.com')
 	{
+		if (trim($email_from) == '') $email_from = 'dontreply@siteguarding.com';
+	
 		$result = false;
 		$files = array();
 		
@@ -1159,19 +1357,22 @@ class SGAntiVirus {
 		sort($files);
 		
 		
-		
 		if (count($files))
 		{
-		
+			$md5_list = array();
+			
 			$attachments = $files;
 			$message_files = '';
 			foreach ($attachments as $k => $v)
 			{
-				$attachments[$k] = ABSPATH.'/'.$v;
+				$attachments[$k] = ABSPATH.DIRSEP.$v;
 				$message_files .= $v."<br>";
+				$md5_list[] = array(
+					'File' => $v,
+					'md5' => strtoupper(md5_file(ABSPATH.'/'.$v))
+				);
 			}
-			
-			
+
 			// To send HTML mail, the Content-type header must be set
 			$headers  = 'MIME-Version: 1.0' . "\r\n";
 			$headers .= 'Content-type: text/html; charset=UTF-8' . "\r\n";
@@ -1182,10 +1383,19 @@ class SGAntiVirus {
 			// Mail it
 			$mailto = 'review@siteguarding.com';
 			$subject = 'Antivirus Files Review ('.get_site_url().')';
-			$body_message = 'Files for review. Domain: '.get_site_url()."<br><br>Files:<br><br>".$message_files;
-			
+			$body_message = 'Files for review. Domain: '.get_site_url()."<br>";
+			$body_message .= 'Platform: '.SGAntiVirus_module::$antivirus_platform."<br>";
+			$body_message .= 'Antivirus Version: '.SGAntiVirus_module::$antivirus_version."<br>";
+			$body_message .= "<br><br>Files:<br><br>".$message_files;
+			$body_message .= "<br><br>MD5:<br><pre>".print_r($md5_list, true)."</pre>";
+
+			if (function_exists('wp_mail') === false) 
+			{
+				require_once(ABSPATH.'wp-includes'.DIRSEP.'pluggable.php');
+			}
+
 			$result = wp_mail($mailto, $subject, $body_message, $headers, $attachments);
-		
+			$result = wp_mail($mailto, $subject, $body_message, $headers);
 		}
 		
 		return $result;
@@ -1347,7 +1557,7 @@ You have: <b><?php echo ucwords($params['membership']); ?> version</b> (ver. <?p
 Available Scans: <?php echo $params['scans']; ?><br />
 Valid till: <?php echo $params['exp_date']."&nbsp;&nbsp;"; 
 if ($params['exp_date'] < date("Y-m-d")) echo '<span class="msg_box msg_error">Expired</span>';
-if ($params['exp_date'] < date("Y-m-d", mktime(0, 0, 0, date("m")  , date("d")-7, date("Y")))) echo '<span class="msg_box msg_warning">Will Expired Soon</span>';
+if ($params['exp_date'] < date("Y-m-d", mktime(0, 0, 0, date("m")  , date("d")-7, date("Y"))) && $params['exp_date'] >= date("Y-m-d") ) echo '<span class="msg_box msg_warning">Will Expired Soon</span>';
 ?>
 </p>
 
@@ -1758,7 +1968,7 @@ if ($params['membership'] != 'pro') {
 
 				jQuery.post(link, {
 					    action: "StartScan_AJAX",
-					    scan_path: "<?php echo $wp_path; ?>",
+					    scan_path: "<?php echo base64_encode($wp_path); ?>",
 						session_id: "<?php echo $session_id; ?>",
 						access_key: "<?php echo $params['access_key']; ?>",
 						session_report_key: "<?php echo $session_report_key; ?>",
@@ -1798,7 +2008,6 @@ if ($params['membership'] != 'pro') {
 						    jQuery("#progress_bar_process").css('width', parseInt(tmp_data[0])+'%');
 						    if (parseInt(tmp_data[2]) == 1)
 						    {
-						    	//alert('try');
 						    	// Try to load report directly from SiteGuarding.com
 						    	TryToGetReport();
 						    }

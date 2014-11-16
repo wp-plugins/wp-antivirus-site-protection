@@ -4,7 +4,7 @@ Donate link: https://www.siteguarding.com/en/website-extensions
 Tags: antivirus, malware, virus, scanner, security, block, backdoor, attack, hack, hacker, hacking, protection, website security, scan, malware removal, virus detection
 Requires at least: 3.0
 Tested up to: 4.0
-Stable tag: 4.2
+Stable tag: 4.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
