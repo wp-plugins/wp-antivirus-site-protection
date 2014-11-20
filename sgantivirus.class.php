@@ -2,7 +2,7 @@
 
 class SGAntiVirus_module
 {
-	public static  $antivirus_version = '4.5';
+	public static  $antivirus_version = '4.6';
 	public static  $antivirus_platform = 'wordpress';
 	
 	public static  $debug = true;
@@ -90,7 +90,13 @@ class SGAntiVirus_module
 		
 		$membership = trim($_POST['membership']);
 		//$scan_path = 'D:\\Hosting\\4927418\html\\'; /* trim($_POST['scan_path']);*/
-		$scan_path = ABSPATH;//base64_decode(trim($_POST['scan_path']));
+		if (!defined('ABSPATH') || strlen(ABSPATH) < 8) 
+		{
+			$scan_path = dirname(__FILE__);
+			$scan_path = str_replace('/wp-content/plugins/wp-antivirus-site-protection', '/', $scan_path);
+    		echo TEST;
+		}
+		else $scan_path = ABSPATH;//base64_decode(trim($_POST['scan_path'])); 
 		define(SCAN_PATH, $scan_path);
 		$access_key = trim($_POST['access_key']);
 		//$do_evristic = intval($_POST['do_evristic']);
