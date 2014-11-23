@@ -2,7 +2,7 @@
 
 class SGAntiVirus_module
 {
-	public static  $antivirus_version = '4.6';
+	public static  $antivirus_version = '4.7';
 	public static  $antivirus_platform = 'wordpress';
 	
 	public static  $debug = true;
@@ -30,12 +30,15 @@ class SGAntiVirus_module
 		error_reporting(0);
 		ini_set('memory_limit', '256M');
 		
+		$error_msg = 'Start Scan Process ver. '.self::$antivirus_version;
+		if (self::$debug) self::DebugLog($error_msg, true);
+		
 		register_shutdown_function('self::AntivirusFinished');
 		
 		if (file_exists(dirname(__FILE___).'/exclude_folders.php'))
 		{
 			$error_msg = 'Exclude folder file loaded';
-			if (self::$debug) self::DebugLog($error_msg, true);
+			if (self::$debug) self::DebugLog($error_msg);
 			
 			require_once(dirname(__FILE___).'/exclude_folders.php');	
 		}
@@ -45,9 +48,6 @@ class SGAntiVirus_module
 		else define(DIRSEP, '/');
 		
 		$tmp_result = set_time_limit ( 7200 );
-		
-		$error_msg = 'Start Scan Process ver. '.self::$antivirus_version;
-		if (self::$debug) self::DebugLog($error_msg, true);
 		
 		$error_msg = 'Change Time limit '.self::$bool_list[intval($tmp_result)];
 		if (self::$debug) self::DebugLog($error_msg);
@@ -94,7 +94,7 @@ class SGAntiVirus_module
 		{
 			$scan_path = dirname(__FILE__);
 			$scan_path = str_replace('/wp-content/plugins/wp-antivirus-site-protection', '/', $scan_path);
-    		echo TEST;
+    		//echo TEST;
 		}
 		else $scan_path = ABSPATH;//base64_decode(trim($_POST['scan_path'])); 
 		define(SCAN_PATH, $scan_path);
@@ -222,6 +222,8 @@ class SGAntiVirus_module
 						case '.pl':
 							
 							$item = str_replace(SCAN_PATH, "", $item);
+							if ($item[0] == "\\" || $item[0] == "/") $item[0] = "";
+							$item = trim($item);
 							if (self::$debug_filelist)
 							{
 								fwrite($fp, $item."\n");
@@ -305,9 +307,9 @@ class SGAntiVirus_module
 		$error_msg = 'Save collected file list';
 		if (self::$debug) self::DebugLog($error_msg);
 		
+		$collected_filelist = dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'filelist.txt';
 		if (!self::$debug_filelist)
 		{
-			$collected_filelist = dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'filelist.txt';
 			$fp = fopen($collected_filelist, 'w');
 			$status = fwrite($fp, implode("\n", $files_list));
 			fclose($fp);
@@ -362,7 +364,7 @@ class SGAntiVirus_module
 		        {
 		            foreach ($files_list as $file_name) 
 		            {
-		            	$file_name = SCAN_PATH.$file_name;
+		            	$file_name = SCAN_PATH.DIRSEP.$file_name;
 		                if( strstr(realpath($file_name), "stark") == FALSE) 
 						{
 							$short_key = str_replace($scan_path, "", $file_name);
