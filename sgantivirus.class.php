@@ -315,10 +315,13 @@ class SGAntiVirus_module
 			fclose($fp);
 			if ($status === false)
 			{
-				$error_msg = 'Cant save information about the collected file';
+				$error_msg = 'Cant save information about the collected file '.$collected_filelist;
 				if (self::$debug) self::DebugLog($error_msg);
-				echo $error_msg;
-				exit;
+				//echo $error_msg;
+				//exit;
+				
+				// Turn ZIP mode
+				$ssh_flag = false;
 			}
 			
 			$error_msg = 'Total files: '.count($files_list);
