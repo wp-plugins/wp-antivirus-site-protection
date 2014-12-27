@@ -1,8 +1,7 @@
 <?php
-
 class SGAntiVirus_module
 {
-	public static  $antivirus_version = '4.7';
+	public static  $antivirus_version = '4.8';
 	public static  $antivirus_platform = 'wordpress';
 	
 	public static  $debug = true;
@@ -27,6 +26,26 @@ class SGAntiVirus_module
 	
 	public static function scan($check_session = true, $show_results = true)
 	{
+		// Skip the 2nd scan process
+		$lockFile = dirname(__FILE__).'/tmp/scan.lock';
+		
+		if (file_exists($lockFile) && (time() - filemtime($lockFile)) < 60*5)
+		{
+			$error_msg = 'Another Scanning Process in the memory. Exit.';
+			if (self::$debug) self::DebugLog($error_msg);
+			exit;
+		}
+		
+		$lockFp = fopen($lockFile, 'w');
+		
+		register_shutdown_function(function() use ($lockFp, $lockFile) {
+		    flock($lockFp, LOCK_UN);
+		    unlink($lockFile);
+		});
+		
+		
+		// Start scanning process
+
 		error_reporting(0);
 		ini_set('memory_limit', '256M');
 		
@@ -35,12 +54,12 @@ class SGAntiVirus_module
 		
 		register_shutdown_function('self::AntivirusFinished');
 		
-		if (file_exists(dirname(__FILE___).'/exclude_folders.php'))
+		if (file_exists(dirname(__FILE__).'/exclude_folders.php'))
 		{
 			$error_msg = 'Exclude folder file loaded';
 			if (self::$debug) self::DebugLog($error_msg);
 			
-			require_once(dirname(__FILE___).'/exclude_folders.php');	
+			require_once(dirname(__FILE__).'/exclude_folders.php');	
 		}
 		
 		
@@ -93,7 +112,7 @@ class SGAntiVirus_module
 		if (!defined('ABSPATH') || strlen(ABSPATH) < 8) 
 		{
 			$scan_path = dirname(__FILE__);
-			$scan_path = str_replace('/wp-content/plugins/wp-antivirus-site-protection', '/', $scan_path);
+			$scan_path = str_replace(DIRSEP.'wp-content'.DIRSEP.'plugins'.DIRSEP.'wp-antivirus-site-protection', DIRSEP, $scan_path);
     		//echo TEST;
 		}
 		else $scan_path = ABSPATH;//base64_decode(trim($_POST['scan_path'])); 
@@ -220,6 +239,8 @@ class SGAntiVirus_module
 						case '.htm':
 						case '.cgi':
 						case '.pl':
+						case '.so':
+						case '.sh':
 							
 							$item = str_replace(SCAN_PATH, "", $item);
 							if ($item[0] == "\\" || $item[0] == "/") $item[0] = "";
@@ -451,8 +472,12 @@ class SGAntiVirus_module
 					'do_evristic' => $do_evristic,
 					'archive_format' => $archive_format))
 			);
-
-			$result = self::UploadSingleFile($archive_filename, 'uploadfiles_ver2', $post_data);
+			
+			$file_url = str_replace(SCAN_PATH, "/", $archive_filename);
+			$error_msg = 'Web pack url: '.$file_url;
+			if (self::$debug) self::DebugLog($error_msg);
+			
+			$result = self::UploadSingleFile($archive_filename, 'uploadfiles_ver2', $post_data, $file_url);
 			if ($result === false)
 			{
 				$error_msg = 'Can not upload pack file for analyze';
@@ -648,13 +673,18 @@ class SGAntiVirus_module
 	}
 
 
-	public static function UploadSingleFile($file, $action, $post_data)
+	public static function UploadSingleFile($file, $action, $post_data, $file_url)
 	{
+		/*ini_set('file_uploads', '1');
+		ini_set('post_max_size', '256M');
+		ini_set('upload_max_filesize', '256M');*/
+
 		$target_url = self::$SITEGUARDING_SERVER.'?action='.$action;
 		$file_name_with_full_path = $file;
 		$post = array(
 			'data' => $post_data,
-			'file_contents'=>'@'.$file_name_with_full_path
+			'file_url' => $file_url,
+			'file_contents'=>'@'.realpath($file_name_with_full_path)
 		);
 
 		/*$error_msg = 'post_data: '.$post_data;
@@ -669,10 +699,16 @@ class SGAntiVirus_module
 		curl_setopt($ch, CURLOPT_URL,$target_url);
 		curl_setopt($ch, CURLOPT_POST,1);
 		curl_setopt($ch, CURLOPT_POSTFIELDS, $post);
+		/*curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);*/
 		curl_setopt($ch, CURLOPT_INFILE, $file_name_with_full_path);
 		curl_setopt($ch, CURLOPT_INFILESIZE, filesize($file_name_with_full_path));
 		/*curl_setopt($ch, CURLOPT_UPLOAD, 1);*/
 		$result=curl_exec ($ch);
+
+		$info = curl_getinfo($ch);
+		$error_msg = 'CURL info - '.print_r($info, true);
+		if (self::$debug) self::DebugLog($error_msg);
+
 		$curl_error = curl_error($ch);
 		curl_close ($ch);
 	

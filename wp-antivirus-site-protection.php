@@ -3,7 +3,7 @@
 Plugin Name: WP Antivirus Site Protection (by SiteGuarding.com)
 Plugin URI: http://www.siteguarding.com/en/website-extensions
 Description: Adds more security for your WordPress website. Server-side scanning. Performs deep website scans of all the files. Virus and Malware detection.
-Version: 4.7
+Version: 4.8
 Author: SiteGuarding.com (SafetyBis Ltd.)
 Author URI: http://www.siteguarding.com
 License: GPLv2
@@ -20,33 +20,33 @@ else define(DIRSEP, '/');
 //error_reporting(E_ERROR);
 
 // Cron check
-if( !is_admin() ) 
+if( !is_admin() )
 {
 	if ( isset($_GET['task']) && $_GET['task'] == 'upgrade' )
 	{
 		error_reporting(0);
-		
+
 		$access_key = trim($_GET['access_key']);
-	
+
 		$params = plgwpavp_GetExtraParams();
-	
+
 		if ($params['access_key'] == $access_key && ($_SERVER["REMOTE_ADDR"] == SITEGUARDING_SERVER_IP1 || $_SERVER["REMOTE_ADDR"] == SITEGUARDING_SERVER_IP2))
 		{
 				include_once(dirname(__FILE__).DIRSEP.'sgantivirus.class.php');
-				
+
 				if (!class_exists('SGAntiVirus_module'))
 				{
 					// Error module is not loaded
 					exit;
 				}
-				
+
 				$license_info = SGAntiVirus::GetLicenseInfo(get_site_url(), $access_key);
 				$version = $_GET['version'];
-				
+
 				// Download version from Wordpress.org
 				$result = SGAntiVirus::DownloadFromWordpress($version);
 				if ($result === false) die('Cant download new version from wordpress.org');
-				
+
 				// Update
 				/*if (function_exists('system'))
 				{
@@ -60,18 +60,18 @@ if( !is_admin() )
 			    	$zip = new ZipArchive;
 					if ($zip->open(dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'update.zip') === TRUE) {
 						$extract_path = ABSPATH.'wp-content'.DIRSEP.'plugins'.DIRSEP;
-						
+
 						//echo "Extract path: ".$extract_path."<br>";
-						
+
 					    $unzip_status = $zip->extractTo($extract_path);
-					    
-					    /*for($i = 0; $i < $zip->numFiles; $i++) 
+
+					    /*for($i = 0; $i < $zip->numFiles; $i++)
 						{
 							$filename = $zip->getNameIndex($i);
 							echo $filename."<br>";
 					        $zip->extractTo($extract_path, array($zip->getNameIndex($i)));
 					    }*/
-    
+
 					    $zip->close();
 					    if ($unzip_status === false) echo 'Unzip failed'."<br>";
 					    echo 'Update finished'."<br>";
@@ -81,34 +81,34 @@ if( !is_admin() )
 		    	}
 		}
 		else die('access_key or IP is not correct');
-		
+
 		exit;
 	}
-	
-	
+
+
 	if ( isset($_GET['task']) && $_GET['task'] == 'cron' )
 	{
 		error_reporting(0);
-		
+
 		$access_key = trim($_GET['access_key']);
-	
+
 		$params = plgwpavp_GetExtraParams();
-	
+
 		if ($params['access_key'] == $access_key)
 		{
 				include_once(dirname(__FILE__).DIRSEP.'sgantivirus.class.php');
-				
+
 				if (!class_exists('SGAntiVirus_module'))
 				{
 					// Error module is not loaded
 					exit;
 				}
-				
+
 				$license_info = SGAntiVirus::GetLicenseInfo(get_site_url(), $access_key);
 				$session_report_key = md5($domain.'-'.rand(1,1000).'-'.time());
-				
+
 				SGAntiVirus_module::MembershipFile($license_info['membership'], $license_info['scans'], $params['show_protectedby']);
-				
+
 				// Prepare scan
 				$_POST['scan_path'] = ABSPATH;
 				$_POST['access_key'] = $access_key;
@@ -117,52 +117,52 @@ if( !is_admin() )
 				$_POST['email'] = get_option( 'admin_email' );
 				$_POST['session_report_key'] = $session_report_key;
 				$_POST['membership'] = $license_info['membership'];
-				
+
 				// Start scan
 				SGAntiVirus_module::scan(false, false);
 		}
-		
+
 		exit;
 	}
-	
+
 	// Remote request malware files
 	if ( isset($_GET['task']) && $_GET['task'] == 'get_malware_files' )
 	{
 		error_reporting(0);
-		
+
 		$access_key = trim($_GET['access_key']);
-	
+
 		$params = plgwpavp_GetExtraParams();
-	
+
 		if ($params['access_key'] == $access_key)
 		{
 				include_once(dirname(__FILE__).DIRSEP.'sgantivirus.class.php');
-				
+
 				if (!class_exists('SGAntiVirus_module'))
 				{
 					// Error module is not loaded
 					echo 'Error module is not loaded';
 					exit;
 				}
-				
-				
+
+
 				$license_info = SGAntiVirus::GetLicenseInfo(get_site_url(), $params['access_key']);
-	
+
 				if ($license_info === false) { echo 'Wrong access_key'; exit; }
-				
-				
+
+
 				if (intval($_GET['showcontent']) == 1)
 				{
 					SGAntiVirus::ShowFilesForAnalyze($license_info['last_scan_files']);
 					exit;
 				}
-				
+
 
 				$a = SGAntiVirus::SendFilesForAnalyze( $license_info['last_scan_files'], $license_info['email'] );
 				if ($a === true)
 				{
 					$tmp_txt = 'Files sent for analyze. You will get report by email '.$license_info['email'].' Files:'.print_r( $license_info['last_scan_files'],true);
-					
+
 					$result_txt = array(
 						'status' => 'OK',
 						'description' => $tmp_txt
@@ -171,45 +171,45 @@ if( !is_admin() )
 				}
 				else {
 					$tmp_txt = 'Operation is failed. Nothing sent for analyze. Files:'.print_r( $license_info['last_scan_files'],true);
-					
+
 					$result_txt = array(
 						'status' => 'ERROR',
 						'description' => $tmp_txt
 					);
 					SGAntiVirus_module::DebugLog($tmp_txt);
 				}
-				
+
 				echo json_encode($result_txt);
 		}
-		
+
 		exit;
 	}
-	
-	
+
+
 	// Remote request malware files
 	if ( isset($_GET['task']) && $_GET['task'] == 'remove_malware_files' )
 	{
 		error_reporting(0);
-		
+
 		$access_key = trim($_GET['access_key']);
-	
+
 		$params = plgwpavp_GetExtraParams();
-	
+
 		if ($params['access_key'] == $access_key && ($_SERVER["REMOTE_ADDR"] == SITEGUARDING_SERVER_IP1 || $_SERVER["REMOTE_ADDR"] == SITEGUARDING_SERVER_IP2))
 		{
 				include_once(dirname(__FILE__).DIRSEP.'sgantivirus.class.php');
-				
+
 				if (!class_exists('SGAntiVirus_module'))
 				{
 					// Error module is not loaded
 					exit;
 				}
-				
+
 				$license_info = SGAntiVirus::GetLicenseInfo(get_site_url(), $params['access_key']);
-	
+
 				if ($license_info === false) { exit; }
-				
-				
+
+
 				$a = SGAntiVirus::QuarantineFiles($license_info['last_scan_files']['main']);
 				if ($a === true)
 				{
@@ -218,7 +218,7 @@ if( !is_admin() )
 				else {
 					SGAntiVirus_module::DebugLog('Operation is failed. Some files are not moved to quarantine or not deleted. Files:'.print_r( $license_info['last_scan_files'],true) );
 				}
-				
+
 				$a = SGAntiVirus::QuarantineFiles($license_info['last_scan_files']['heuristic']);
 				if ($a === true)
 				{
@@ -227,25 +227,25 @@ if( !is_admin() )
 				else {
 					SGAntiVirus_module::DebugLog('Operation is failed. Some files are not moved to quarantine or not deleted. Files:'.print_r( $license_info['last_scan_files'],true) );
 				}
-				
+
 		}
 		else die('access_key or IP is not correct');
-		
+
 		exit;
 	}
-	
-	
-	
+
+
+
 	if ( isset($_GET['task']) && $_GET['task'] == 'status' )
 	{
 		error_reporting(0);
-		
+
 		include_once(dirname(__FILE__).DIRSEP.'sgantivirus.class.php');
-		
+
 		$access_key = trim($_GET['access_key']);
-	
+
 		$params = plgwpavp_GetExtraParams();
-	
+
 		if ($params['access_key'] == $access_key)
 		{
 			$a = array(
@@ -253,50 +253,50 @@ if( !is_admin() )
 				'answer' => md5($_GET['answer']),
 				'version' => SGAntiVirus_module::$antivirus_version
 			);
-			
+
 			echo json_encode($a);
 		}
-		
+
 		exit;
 	}
-	
-	
+
+
 	if ( isset($_GET['task']) && $_GET['task'] == 'view_file' )
 	{
 		error_reporting(0);
-		
+
 		include_once(dirname(__FILE__).DIRSEP.'sgantivirus.class.php');
-		
+
 		$access_key = trim($_GET['access_key']);
-	
+
 		$params = plgwpavp_GetExtraParams();
-	
+
 		if ($params['access_key'] == $access_key && ($_SERVER["REMOTE_ADDR"] == SITEGUARDING_SERVER_IP1 || $_SERVER["REMOTE_ADDR"] == SITEGUARDING_SERVER_IP2))
 		{
 			$filename = $_GET['file'];
-			
+
 			switch ($filename)
 			{
 				case 'debug':
 					$filename = dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'debug.log';
 					break;
-					
+
 				case 'filelist':
 					$filename = dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'filelist.txt';
 					break;
-					
+
 				default:
 					$filename = ABSPATH.$filename;
 			}
-			
+
 			echo "\n\n";
-			
+
 			if (file_exists($filename)) echo 'File exists: '.$filename."\n";
 			else {echo 'File is absent: '.$filename."\n\n"; exit;}
-			
+
 			echo 'File size: '.filesize($filename)."\n";
 			echo 'File MD5: '.strtoupper(md5_file($filename))."\n\n";
-			
+
 			$handle = fopen($filename, "r");
 			$contents = fread($handle, filesize($filename));
 			fclose($handle);
@@ -305,12 +305,12 @@ if( !is_admin() )
 			echo '----- File Content [end] -----'."\n";
 		}
 		else die('access_key or IP is not correct');
-		
+
 		exit;
 	}
-	
-	
-	
+
+
+
 	/*
 	function plgavp_login_head_add_field()
 	{
@@ -322,20 +322,20 @@ if( !is_admin() )
 			<div style="font-size:11px; padding:3px 0;position: fixed;bottom:0;z-index:10;width:100%;text-align:center;background-color:#F1F1F1">Protected with <a href="https://www.siteguarding.com/en/website-antivirus" target="_blank">antivirus</a> developed by <a href="https://www.siteguarding.com" target="_blank" title="SiteGuarding.com - Website Security. Website Antivirus Protection. Malware Removal services. Professional security services against hacker activity.">SiteGuarding.com</a></div>
 		<?php
 		}
-		
+
 	}
 	add_action( 'login_head', 'plgavp_login_head_add_field' );
 	*/
 
 	// Show Protected by
-	function plgavp_footer_protectedby() 
+	function plgavp_footer_protectedby()
 	{
 		if ( file_exists( dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'membership.log'))
 		{
 			?>
 				<div style="font-size:10px; padding:0 2px;position: fixed;bottom:0;right:0;z-index:1000;text-align:center;background-color:#F1F1F1;color:#222;opacity:0.8;">Protected with <a style="color:#4B9307" href="https://www.siteguarding.com/en/website-antivirus" target="_blank" title="Security service that protects your website against malware and hacker exploits. Website Antivirus protection.">SiteGuarding.com Antivirus</a></div>
 			<?php
-		}	
+		}
 	}
 	add_action('wp_footer', 'plgavp_footer_protectedby', 100);
 
@@ -345,17 +345,17 @@ if( !is_admin() )
 
 
 if( is_admin() ) {
-	
+
 	error_reporting(0);
-	
-/*	function wp_antivirus_admin_menu() 
+
+/*	function wp_antivirus_admin_menu()
 	{
 		echo '111111111111';
 		//load_menu();
 	}
-	
+
 	add_action( 'admin_menu', 'wp_antivirus_admin_menu');*/
-	
+
 	function plgwpavp_activation()
 	{
 		global $wpdb;
@@ -367,11 +367,11 @@ if( is_admin() ) {
                 `var_value` char(255) CHARACTER SET utf8 NOT NULL,
                 PRIMARY KEY (`id`)
 			) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;';
-            
+
 
 			require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
 			dbDelta( $sql ); // Creation of the new TABLE
-            
+
             // Notify user
    			include_once(dirname(__FILE__).'/sgantivirus.class.php');
             $message = 'Dear Customer!'."<br><br>";
@@ -380,29 +380,29 @@ if( is_admin() ) {
 			$message .= 'Please visit <a href="https://www.siteguarding.com/en/website-extensions">SiteGuarding.com Extentions<a> and learn more about our security solutions.'."<br><br>";
 			$subject = 'Antivirus Installation';
 			$email = get_option( 'admin_email' );
-			
+
 			SGAntiVirus_module::SendEmail($email, $message, $subject);
 		}
 	}
 	register_activation_hook( __FILE__, 'plgwpavp_activation' );
-    
-    
+
+
 	function plgwpavp_uninstall()
 	{
-		
+
 		global $wpdb;
 		$table_name = $wpdb->prefix . 'plgwpavp_config';
 		$wpdb->query( 'DROP TABLE ' . $table_name );
-		
+
 	}
 	register_uninstall_hook( __FILE__, 'plgwpavp_uninstall' );
-	
-	
-    
+
+
+
 	add_action( 'admin_init', 'plgavp_admin_init' );
 	function plgavp_admin_init()
 	{
-		wp_register_style( 'plgavp_LoadStyle', plugins_url('css/antivirus.css', __FILE__) );	
+		wp_register_style( 'plgavp_LoadStyle', plugins_url('css/antivirus.css', __FILE__) );
 	}
 
 
@@ -411,11 +411,11 @@ if( is_admin() ) {
 	if (count($avp_params) && $avp_params !== false)
 	{
 		$avp_license_info = SGAntiVirus::GetLicenseInfo(get_site_url(), $avp_params['access_key']);
-		
+
 		// Save membership type
 		$data = array('membership' => $avp_license_info['membership']);
 		plgwpavp_SetExtraParams($data);
-		
+
 		$avp_alert_main = 0;
 		if (count($avp_license_info['last_scan_files']['main']))
 		{
@@ -425,7 +425,7 @@ if( is_admin() ) {
 			}
 		}
 		if ($avp_license_info['membership'] != 'pro') $avp_alert_main = $avp_license_info['last_scan_files_counters']['main'];
-	
+
 		$avp_alert_heuristic = 0;
 		if (count($avp_license_info['last_scan_files']['heuristic']))
 		{
@@ -435,42 +435,42 @@ if( is_admin() ) {
 			}
 		}
 		if ($avp_license_info['membership'] != 'pro') $avp_alert_heuristic = $avp_license_info['last_scan_files_counters']['heuristic'];
-	
+
 		if ($avp_alert_main > 0 || $avp_alert_heuristic > 0)
 		{
-			$avp_alert_txt = '<span class="update-plugins"><span class="update-count">'.$avp_alert_main.'/'.$avp_alert_heuristic.'</span></span>';	
-		} 
+			$avp_alert_txt = '<span class="update-plugins"><span class="update-count">'.$avp_alert_main.'/'.$avp_alert_heuristic.'</span></span>';
+		}
 		else $avp_alert_txt = '';
-		
-		
+
+
 		if ($avp_alert_main > 0 || $avp_alert_heuristic > 0)
 		{
 			$avp_eachpage_alert_txt = '<b>Antivirus Important Notice:</b>';
 			if ($avp_alert_main > 0)
 			{
-				$avp_eachpage_alert_txt .= ' Virus code detected: '.$avp_alert_main.' file(s).'; 
+				$avp_eachpage_alert_txt .= ' Virus code detected: '.$avp_alert_main.' file(s).';
 			}
 			if ($avp_alert_heuristic > 0)
 			{
-				$avp_eachpage_alert_txt .= ' Unsafe code detected: '.$avp_alert_heuristic.' file(s).'; 
+				$avp_eachpage_alert_txt .= ' Unsafe code detected: '.$avp_alert_heuristic.' file(s).';
 			}
-		} 
+		}
 		else if ($avp_license_info['membership'] != 'pro' && $avp_license_info['membership'] != 'trial') $avp_eachpage_alert_txt .= '<b>Antivirus Important Notice:</b> Your license is expired and antivirus has limits. Some features are disabled.';
 			else  $avp_eachpage_alert_txt = '';
-		
+
 		if ($avp_license_info['membership'] != 'pro' && $avp_license_info['membership'] != 'trial') $avp_eachpage_alert_txt .= '';
 	}
-	
-	
+
+
 
 	add_action('admin_menu', 'register_plgavp_settings_page');
 
-	
-	function antivirus_admin_notice() 
+
+	function antivirus_admin_notice()
 	{
 		global $avp_eachpage_alert_txt;
-		
-		if ($avp_eachpage_alert_txt != '') 
+
+		if ($avp_eachpage_alert_txt != '')
 		{
 	    ?>
 		    <div class="error">
@@ -485,14 +485,14 @@ if( is_admin() ) {
 
 
 
-	function register_plgavp_settings_page() 
+	function register_plgavp_settings_page()
 	{
 		global $avp_alert_txt;
-		
+
 		add_menu_page('plgavp_Antivirus', 'Antivirus'.$avp_alert_txt, 'activate_plugins', 'plgavp_Antivirus', 'plgavp_settings_page_callback', plugins_url('images/', __FILE__).'antivirus-logo.png');
 	}
 
-	function plgavp_settings_page_callback() 
+	function plgavp_settings_page_callback()
 	{
 		// Load class
 		if (!file_exists(dirname(__FILE__).'/sgantivirus.class.php'))
@@ -501,24 +501,24 @@ if( is_admin() ) {
 			SGAntiVirus::ShowMessage('File '.dirname(__FILE__).'/sgantivirus.class.php is not exist.');
 			return;
 		}
-		
+
 		include_once(dirname(__FILE__).'/sgantivirus.class.php');
-		
+
 		if (!class_exists('SGAntiVirus_module'))
 		{
 			// Error module is not loaded
 			SGAntiVirus::ShowMessage('Main antivirus scanner module is not loaded. Please try again.');
 			return;
 		}
-		
+
 		wp_enqueue_style( 'plgavp_LoadStyle' );
-		
+
 		?>
 			<h2 class="avp_header icon_radar">WP Antivirus Site Protection</h2>
-			
+
 		<?php
-		
-		
+
+
 		// Actions
 		// Confirm Registration
 		if (isset($_POST['action']) && $_POST['action'] == 'ConfirmRegistration' && check_admin_referer( 'name_254f4bd3ea8d' ))
@@ -531,7 +531,7 @@ if( is_admin() ) {
 			{
 				$data = array('registered' => 1, 'email' => $email, 'access_key' => $access_key);
 				plgwpavp_SetExtraParams($data);
-				
+
 				// Send access_key to user
 				$message = 'Dear Customer!'."<br><br>";
 				$message .= 'Thank you for registration your copy of WP Antivirus Site Protection. Please keep this email for your records, it contains your registration information and you will need it in the future.'."<br><br>";
@@ -540,7 +540,7 @@ if( is_admin() ) {
 				$message .= '<b>Email:</b> '.$email."<br>";
 				$message .= '<b>Access Key:</b> '.$access_key."<br><br>";
 				$subject = 'AntiVirus Registration Information';
-				
+
 				SGAntiVirus_module::SendEmail($email, $message, $subject);
 			}
 			else {
@@ -549,15 +549,15 @@ if( is_admin() ) {
 				return;
 			}
 		}
-		
+
 		// Start Scan
 		if (isset($_POST['action']) && $_POST['action'] == 'StartScan' && check_admin_referer( 'name_254f4bd3ea8d' ))
 		{
 			$data = array('allow_scan' => intval($_POST['allow_scan']), 'do_evristic' => intval($_POST['do_evristic']));
 			plgwpavp_SetExtraParams($data);
-			
+
 			$params = plgwpavp_GetExtraParams();
-			
+
 			// Check if something in progress
 			$progress_info = SGAntiVirus::GetProgressInfo(get_site_url(), $params['access_key']);
 			if ($progress_info['in_progress'] > 0)
@@ -565,8 +565,8 @@ if( is_admin() ) {
 				$msg = 'Another scanning process is in progress. In 5-10 minutes you will get report by email or it will be available in Latest Reports section.';
 				SGAntiVirus::ShowMessage($msg);
 				return;
-			} 
-			
+			}
+
 			global $avp_license_info;
 			$session_id = md5(time().'-'.rand(1,10000));
 			ob_start();
@@ -576,19 +576,19 @@ if( is_admin() ) {
 			SGAntiVirus::ScanProgress($session_id, ABSPATH, $params, $avp_license_info);
 			return;
 		}
-		
+
 
 		// Quarantine & Malware remove
 		if (isset($_POST['action']) && $_POST['action'] == 'QuarantineFiles' && check_admin_referer( 'name_254f4bd3ea8d' ))
 		{
 			$params = plgwpavp_GetExtraParams();
-			
+
 			$license_info = SGAntiVirus::GetLicenseInfo(get_site_url(), $params['access_key']);
 
 			if ($license_info === false) { SGAntiVirus::page_ConfirmRegistration(); return; }
-			
+
 			if ($license_info['membership'] == 'pro')
-			{ 
+			{
 				if (isset($_POST['filelist']))
 				{
 					$filelist_type = trim($_POST['filelist']);
@@ -598,63 +598,63 @@ if( is_admin() ) {
 						case 'heuristic':
 							$a = SGAntiVirus::QuarantineFiles($license_info['last_scan_files'][$filelist_type]);
 							break;
-							
+
 						default:
 							die('filelist is not allowed');
 							break;
-					}	
+					}
 				}
-					
+
 				if ($a === true)
 				{
-					SGAntiVirus::ShowMessage('Malware moved to quarantine and deleted from the server.');	
+					SGAntiVirus::ShowMessage('Malware moved to quarantine and deleted from the server.');
 				}
 				else {
 					SGAntiVirus::ShowMessage('Operation is failed. Some files are not moved to quarantine or not deleted.', 'error');
 				}
 			}
 		}
-		
-		
+
+
 		// Send files to SiteGuarding.com
 		if (isset($_POST['action']) && $_POST['action'] == 'SendFilesForAnalyze' && check_admin_referer( 'name_254f4bd3ea8d' ))
 		{
 			$params = plgwpavp_GetExtraParams();
-			
+
 			$license_info = SGAntiVirus::GetLicenseInfo(get_site_url(), $params['access_key']);
 
 			if ($license_info === false) { SGAntiVirus::page_ConfirmRegistration(); return; }
-			
+
 			if ($license_info['membership'] == 'pro')
-			{ 
-				$a = SGAntiVirus::SendFilesForAnalyze($license_info['last_scan_files'], $license_info['email'] );	
+			{
+				$a = SGAntiVirus::SendFilesForAnalyze($license_info['last_scan_files'], $license_info['email'] );
 				if ($a === true)
 				{
-					SGAntiVirus::ShowMessage('Files sent for analyze. SiteGuarding.com support will contact with you within 24-48 hours. You will get report by email '.$license_info['email']);	
+					SGAntiVirus::ShowMessage('Files sent for analyze. SiteGuarding.com support will contact with you within 24-48 hours. You will get report by email '.$license_info['email']);
 				}
 				else {
 					SGAntiVirus::ShowMessage('Operation is failed. Nothing sent for analyze.', 'error');
 				}
 			}
 		}
-		
-		
-		
-		
+
+
+
+
 
 
 		// Get params
 		$params = plgwpavp_GetExtraParams();
-		
-		
+
+
 		// Check if website is registered
 		//SGAntiVirus::page_ConfirmRegistration(); return;
 		if (!isset($params['registered']) || intval($params['registered']) == 0) { SGAntiVirus::page_ConfirmRegistration(); return; }
-		
+
 		// Get data from siteguading about number of scans and exp date
 		$license_info = SGAntiVirus::GetLicenseInfo(get_site_url(), $params['access_key']);
 		if ($license_info === false) { SGAntiVirus::page_ConfirmRegistration(); return; }
-		
+
 		// Check server settings
 		if (!SGAntiVirus::checkServerSettings()) return;
 
@@ -664,8 +664,8 @@ if( is_admin() ) {
 		print_r($params);
 		echo '</pre>';
 		*/
-		
-		
+
+
 
 		global $avp_license_info;
 		SGAntiVirus_module::MembershipFile($avp_license_info['membership'], $avp_license_info['scans'], $params['show_protectedby']);
@@ -674,48 +674,48 @@ if( is_admin() ) {
 
 		foreach ($license_info as $k => $v)
 		{
-			$params[$k] = $v;	
+			$params[$k] = $v;
 		}
-		
-		
+
+
 		SGAntiVirus::page_PreScan($params);
 
 	}
-	
-	
+
+
 
 
 	add_action('admin_menu', 'register_plgavp_results_subpage');
 
 	function register_plgavp_results_subpage() {
 		global $avp_alert_txt;
-		add_submenu_page( 'plgavp_Antivirus', 'Scan Results', 'Scan Results'.$avp_alert_txt, 'manage_options', 'plgavp_Antivirus_results_page', 'plgavp_antivirus_results_page_callback' ); 
+		add_submenu_page( 'plgavp_Antivirus', 'Scan Results', 'Scan Results'.$avp_alert_txt, 'manage_options', 'plgavp_Antivirus_results_page', 'plgavp_antivirus_results_page_callback' );
 	}
-	
-	
+
+
 	function plgavp_antivirus_results_page_callback()
 	{
 		wp_enqueue_style( 'plgavp_LoadStyle' );
-		
-		
+
+
 		global $avp_license_info;
-		
+
 		$params = $avp_license_info;
-		
+
 		?>
-			<h2 class="avp_header icon_radar">WP Antivirus Scan Results</h2>		
+			<h2 class="avp_header icon_radar">WP Antivirus Scan Results</h2>
 
 
-			<h3>Latest Scan Result</h3>	
-			
-			<div class="mod-box"><div>	
-			
+			<h3>Latest Scan Result</h3>
+
+			<div class="mod-box"><div>
+
 			<?php
-			if ($params['membership'] == 'free') 
+			if ($params['membership'] == 'free')
 			{
 				?>
 				<span class="msg_box msg_error">Quarantine & Malware Removal feature is disabled. Available in PRO version only. <a href="https://www.siteguarding.com/en/buy-service/antivirus-site-protection?domain=<?php echo urlencode( get_site_url() ); ?>&email=<?php echo urlencode(get_option( 'admin_email' )); ?>" target="_blank">Upgrade to PRO version</a></span>
-				<?php	
+				<?php
 			}
 			?>
 
@@ -731,28 +731,28 @@ if( is_admin() ) {
 				{
 					if (!file_exists(ABSPATH.'/'.$tmp_file)) unset($params['last_scan_files']['main'][$k]);
 				}
-				
+
 				if (count($params['last_scan_files']['main']) > 0)
 				{
 					?>
 					<div class="avp_latestfiles_block">
 					<h4>Action is required</h4>
-					
+
 					<?php
 					foreach ($params['last_scan_files']['main'] as $tmp_file)
 					{
 						echo '<p>'.$tmp_file.'</p>';
 					}
 					?>
-	
+
 					<br />
-					
+
 					<div class="divTable">
 					<div class="divRow">
 					<div class="divCell">
 					<form method="post" action="admin.php?page=plgavp_Antivirus">
 					<?php
-					if ($params['membership'] == 'pro') 
+					if ($params['membership'] == 'pro')
 					{
 						?>
 						<input type="submit" name="submit" id="submit" class="button button-primary" value="Send Files to SiteGuarding.com">
@@ -762,8 +762,8 @@ if( is_admin() ) {
 						<input type="button" class="button button-primary" value="Send Files to SiteGuarding.com" onclick="javascript:alert('Available in PRO version only. Please Upgrade to PRO version.');">
 						<?php
 					}
-					?>	
-					
+					?>
+
 					<?php
 					wp_nonce_field( 'name_254f4bd3ea8d' );
 					?>
@@ -771,13 +771,13 @@ if( is_admin() ) {
 					<input type="hidden" name="action" value="SendFilesForAnalyze"/>
 					</form>
 					</div>
-					
+
 					<div class="divCell">&nbsp;</div>
 
 					<div class="divCell">
 					<form method="post" action="admin.php?page=plgavp_Antivirus">
 					<?php
-					if ($params['membership'] == 'pro') 
+					if ($params['membership'] == 'pro')
 					{
 						?>
 						<input type="submit" name="submit" id="submit" class="button button-primary" value="Quarantine & Remove malware">
@@ -787,25 +787,25 @@ if( is_admin() ) {
 						<input type="button" class="button button-primary" value="Quarantine & Remove malware" onclick="javascript:alert('Available in PRO version only. Please Upgrade to PRO version.');">
 						<?php
 					}
-					?>	
-					
+					?>
+
 					<?php
 					wp_nonce_field( 'name_254f4bd3ea8d' );
 					?>
 					<input type="hidden" name="page" value="plgavp_Antivirus"/>
 					<input type="hidden" name="action" value="QuarantineFiles"/>
 					</form>
-					
+
 					</div></div></div>
-					* Please note: Hackers can inject malware codes inside of the normal files. If you delete these files, website can stop to work or will be not stable. We advice to send request to SiteGuarding.com for file review and analyze. 
-					
+					* Please note: Hackers can inject malware codes inside of the normal files. If you delete these files, website can stop to work or will be not stable. We advice to send request to SiteGuarding.com for file review and analyze.
+
 					</div>
 					<?php
 				}
 
 			}
-			
-			
+
+
 			if (count($params['last_scan_files']['heuristic']))
 			{
 				// Check files
@@ -813,7 +813,7 @@ if( is_admin() ) {
 				{
 					if (!file_exists(ABSPATH.'/'.$tmp_file)) unset($params['last_scan_files']['heuristic'][$k]);
 				}
-				
+
 				if (count($params['last_scan_files']['heuristic']) > 0)
 				{
 					?>
@@ -824,11 +824,11 @@ if( is_admin() ) {
 					{
 						echo '<p>'.$tmp_file.'</p>';
 					}
-					
+
 					?>
 					<br />
 					<?php
-					
+
 					if ($params['whitelist_filters_enabled'] == 1)
 					{
 						?>
@@ -836,17 +836,17 @@ if( is_admin() ) {
 						<?php
 					}
 					?>
-					
-					
+
+
 					<div class="divTable">
 					<div class="divRow">
 					<div class="divCell">
-					
+
 					<form method="post" action="admin.php?page=plgavp_Antivirus">
 					<?php
 					wp_nonce_field( 'name_254f4bd3ea8d' );
-					
-					if ($params['membership'] == 'pro') 
+
+					if ($params['membership'] == 'pro')
 					{
 						?>
 						<input type="submit" name="submit" id="submit" class="button button-primary" value="Send Files to SiteGuarding.com">
@@ -856,20 +856,20 @@ if( is_admin() ) {
 						<input type="button" class="button button-primary" value="Send Files to SiteGuarding.com" onclick="javascript:alert('Available in PRO version only. Please Upgrade to PRO version.');">
 						<?php
 					}
-					?>	
-					
+					?>
+
 					<input type="hidden" name="page" value="plgavp_Antivirus"/>
 					<input type="hidden" name="action" value="SendFilesForAnalyze"/>
 					</form>
-					
+
 					</div>
-					
+
 					<div class="divCell">&nbsp;</div>
 
 					<div class="divCell">
 					<form method="post" action="admin.php?page=plgavp_Antivirus">
 					<?php
-					if ($params['membership'] == 'pro') 
+					if ($params['membership'] == 'pro')
 					{
 						?>
 						<input type="submit" name="submit" id="submit" class="button button-primary" value="Quarantine & Remove malware">
@@ -879,8 +879,8 @@ if( is_admin() ) {
 						<input type="button" class="button button-primary" value="Quarantine & Remove malware" onclick="javascript:alert('Available in PRO version only. Please Upgrade to PRO version.');">
 						<?php
 					}
-					?>	
-					
+					?>
+
 					<?php
 					wp_nonce_field( 'name_254f4bd3ea8d' );
 					?>
@@ -888,66 +888,66 @@ if( is_admin() ) {
 					<input type="hidden" name="action" value="QuarantineFiles"/>
 					<input type="hidden" name="filelist" value="heuristic"/>
 					</form>
-					
+
 					</div></div></div>
-					* Please note: Hackers can inject malware codes inside of the normal files. If you delete these files, website can stop to work or will be not stable. We advice to send request to SiteGuarding.com for file review and analyze. 
-					
-					
+					* Please note: Hackers can inject malware codes inside of the normal files. If you delete these files, website can stop to work or will be not stable. We advice to send request to SiteGuarding.com for file review and analyze.
+
+
 					</div>
 					<?php
 				}
 			}
-			
-		
+
+
 			?>
-			
-			
+
+
 			<img class="imgpos" alt="WP Antivirus Site Protection" src="<?php echo plugins_url('images/', __FILE__).'mid_box.png'; ?>" width="110" height="70">
-						
+
 			</div></div>
-					
+
 					<?php SGAntiVirus::HelpBlock();
-		
+
 	}
-	
-	
+
+
 	add_action('admin_menu', 'register_plgavp_settings_subpage');
 
 	function register_plgavp_settings_subpage() {
-		add_submenu_page( 'plgavp_Antivirus', 'Settings', 'Settings', 'manage_options', 'plgavp_Antivirus_settings_page', 'plgavp_antivirus_settings_page_callback' ); 
+		add_submenu_page( 'plgavp_Antivirus', 'Settings', 'Settings', 'manage_options', 'plgavp_Antivirus_settings_page', 'plgavp_antivirus_settings_page_callback' );
 	}
-	
-	
+
+
 	function plgavp_antivirus_settings_page_callback()
 	{
 		wp_enqueue_style( 'plgavp_LoadStyle' );
 
 		$img_path = plugins_url('images/', __FILE__);
-		
+
 		if (isset($_POST['action']) && $_POST['action'] == 'update' && check_admin_referer( 'name_AFAD78D85E01' ))
 		{
 			$data = array('access_key' => trim($_POST['access_key']));
-			if (trim($_POST['access_key']) != '') 
+			if (trim($_POST['access_key']) != '')
 			{
 				$data['registered'] = 1;
 				$data['email'] = get_option( 'admin_email' );
 			}
-			
+
 			$data['show_protectedby'] = intval($_POST['show_protectedby']);
-			
+
 			global $avp_license_info;
 			if ($avp_license_info['membership'] == 'free') $data['show_protectedby'] = 1;
-			
+
 			plgwpavp_SetExtraParams($data);
-			
+
 			SGAntiVirus::ShowMessage('Settings saved.');
 		}
-		
+
 		$params = plgwpavp_GetExtraParams();
-		
+
 		?>
 		<h2 class="avp_header icon_settings">WP Antivirus Settings</h2>
-		
+
 <form method="post" id="plgwpagp_settings_page" action="admin.php?page=plgavp_Antivirus_settings_page" onsubmit="return SG_CheckForm(this);">
 
 
@@ -962,7 +962,7 @@ if( is_admin() ) {
 	            <span class="description">This key is necessary to access to <a target="_blank" href="http://www.siteguarding.com">SiteGuarding API</a> features. Every website has uniq access key. Don't change it fo you don't know what is it.</span>
 			</td>
 			</tr>
-			
+
 			<tr class="line_4">
 			<th scope="row"><?php _e( 'Show \'Protected by\'', 'plgwpavp' )?></th>
 			<td>
@@ -970,12 +970,12 @@ if( is_admin() ) {
 			</td>
 			</tr>
 
-			
+
 			</table>
 
 <?php
 wp_nonce_field( 'name_AFAD78D85E01' );
-?>			
+?>
 <p class="submit">
   <input type="submit" name="submit" id="submit" class="button button-primary" value="Save Changes">
 </p>
@@ -986,7 +986,7 @@ wp_nonce_field( 'name_AFAD78D85E01' );
 
 
 		<h3>Cron Settings</h3>
-		
+
 		<p>
 		If you want to enable daily scan of your website. Add this line in your hosting panel in cron settings.<br /><br />
 		<b>Unix time settings:</b> 0 0 * * *<br />
@@ -995,23 +995,23 @@ wp_nonce_field( 'name_AFAD78D85E01' );
 
 		<?php
 	}
-	
-	
+
+
 	add_action('admin_menu', 'register_plgavp_extentions_subpage');
 
 	function register_plgavp_extentions_subpage() {
-		add_submenu_page( 'plgavp_Antivirus', 'Extentions', 'Extentions', 'manage_options', 'plgavp_Antivirus_extentions_page', 'plgavp_antivirus_extentions_page_callback' ); 
+		add_submenu_page( 'plgavp_Antivirus', 'Extentions', 'Extentions', 'manage_options', 'plgavp_Antivirus_extentions_page', 'plgavp_antivirus_extentions_page_callback' );
 	}
-	
-	
+
+
 	function plgavp_antivirus_extentions_page_callback()
 	{
 		wp_enqueue_style( 'plgavp_LoadStyle' );
-		
+
 		?>
-		
+
 		<h2 class="avp_header icon_settings">Security Extentions</h2>
-		
+
 		<div class="grid-box width25 grid-h" style="width: 250px;">
 		  <div class="module mod-box widget_black_studio_tinymce">
 		    <div class="deepest">
@@ -1053,8 +1053,8 @@ wp_nonce_field( 'name_AFAD78D85E01' );
 		    </div>
 		  </div>
 		</div>
-		
-		
+
+
 		<div class="grid-box width25 grid-h" style="width: 250px;">
 		  <div class="module mod-box widget_black_studio_tinymce">
 		    <div class="deepest">
@@ -1099,8 +1099,8 @@ wp_nonce_field( 'name_AFAD78D85E01' );
 		    </div>
 		  </div>
 		</div>
-		
-		
+
+
 		<div class="grid-box width25 grid-h" style="width: 250px;">
 		  <div class="module mod-box widget_black_studio_tinymce">
 		    <div class="deepest">
@@ -1139,8 +1139,8 @@ wp_nonce_field( 'name_AFAD78D85E01' );
 		    </div>
 		  </div>
 		</div>
-		
-		
+
+
 		<div class="grid-box width25 grid-h" style="width: 250px;">
 		  <div class="module mod-box widget_black_studio_tinymce">
 		    <div class="deepest" >
@@ -1179,14 +1179,14 @@ wp_nonce_field( 'name_AFAD78D85E01' );
 		    </div>
 		  </div>
 		</div>
-		
-		
-		
 
-				
+
+
+
+
 		<?php
 	}
-	
+
 
 
 }
@@ -1205,23 +1205,23 @@ wp_nonce_field( 'name_AFAD78D85E01' );
 function plgwpavp_GetExtraParams()
 {
     global $wpdb;
-    
+
     $table_name = $wpdb->prefix . 'plgwpavp_config';
-    
+
     $ppbv_table = $wpdb->get_results("SHOW TABLES LIKE '".$table_name."'" , ARRAY_N);
     if(!isset($ppbv_table[0])) return false;
-    
-    $rows = $wpdb->get_results( 
+
+    $rows = $wpdb->get_results(
     	"
     	SELECT *
     	FROM ".$table_name."
     	"
     );
-    
+
     $a = array();
     if (count($rows))
     {
-        foreach ( $rows as $row ) 
+        foreach ( $rows as $row )
         {
         	$a[trim($row->var_name)] = trim($row->var_value);
         }
@@ -1236,16 +1236,16 @@ function plgwpavp_SetExtraParams($data = array())
     global $wpdb;
     $table_name = $wpdb->prefix . 'plgwpavp_config';
 
-    if (count($data) == 0) return;   
-    
+    if (count($data) == 0) return;
+
     foreach ($data as $k => $v)
     {
         $tmp = $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM ' . $table_name . ' WHERE var_name = %s LIMIT 1;', $k ) );
-        
+
         if ($tmp == 0)
         {
-            // Insert    
-            $wpdb->insert( $table_name, array( 'var_name' => $k, 'var_value' => $v ) ); 
+            // Insert
+            $wpdb->insert( $table_name, array( 'var_name' => $k, 'var_value' => $v ) );
         }
         else {
             // Update
@@ -1253,7 +1253,7 @@ function plgwpavp_SetExtraParams($data = array())
             $where = array('var_name' => $k);
             $wpdb->update( $table_name, $data, $where );
         }
-    } 
+    }
 }
 
 
@@ -1263,7 +1263,7 @@ function plgwpavp_SetExtraParams($data = array())
 
 
 class SGAntiVirus {
-	
+
 	public static function DownloadFromWordpress($version)
 	{
 		$dst = fopen(dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'update.zip', 'w');
@@ -1287,34 +1287,34 @@ class SGAntiVirus {
          if ($a === false) return false;
          else return true;
 	}
-	
+
 	public static function ShowFilesForAnalyze($files_array = array())
 	{
 		$files = array();
-		
+
 		if (count($files_array['main']))
 		{
 			foreach ($files_array['main'] as $k => $filename)
 			{
-				$files[$filename] = $filename;	
+				$files[$filename] = $filename;
 			}
 		}
 		if (count($files_array['heuristic']))
 		{
 			foreach ($files_array['heuristic'] as $k => $filename)
 			{
-				$files[$filename] = $filename;	
+				$files[$filename] = $filename;
 			}
 		}
-		
+
 		sort($files);
-		
+
 		echo '<pre>';
 		print_r($files);
 		echo '</pre>';
-		
+
 		echo '<br><br>';
-		
+
 		if (count($files))
 		{
 			foreach ($files as $file)
@@ -1325,42 +1325,42 @@ class SGAntiVirus {
 				$content =  fread($handle, filesize($file_full_path));
 				echo 'Content: <pre>'.$content.'</pre>';
 				fclose($handle);
-				
+
 				echo '<br><br><hr><br><br>';
 			}
 		}
-		
-		
+
+
 	}
-	
+
 	public static function SendFilesForAnalyze($files_array = array(), $email_from = 'dontreply@siteguarding.com')
 	{
 		if (trim($email_from) == '') $email_from = 'dontreply@siteguarding.com';
-	
+
 		$result = false;
 		$files = array();
-		
+
 		if (count($files_array['main']))
 		{
 			foreach ($files_array['main'] as $k => $filename)
 			{
-				$files[$filename] = $filename;	
+				$files[$filename] = $filename;
 			}
 		}
 		if (count($files_array['heuristic']))
 		{
 			foreach ($files_array['heuristic'] as $k => $filename)
 			{
-				$files[$filename] = $filename;	
+				$files[$filename] = $filename;
 			}
 		}
 		sort($files);
-		
-		
+
+
 		if (count($files))
 		{
 			$md5_list = array();
-			
+
 			$attachments = $files;
 			$message_files = '';
 			foreach ($attachments as $k => $v)
@@ -1376,10 +1376,10 @@ class SGAntiVirus {
 			// To send HTML mail, the Content-type header must be set
 			$headers  = 'MIME-Version: 1.0' . "\r\n";
 			$headers .= 'Content-type: text/html; charset=UTF-8' . "\r\n";
-			
+
 			// Additional headers
 			$headers .= "From: ".get_site_url()." <".$email_from.">" . "\r\n";
-			
+
 			// Mail it
 			$mailto = 'review@siteguarding.com';
 			$subject = 'Antivirus Files Review ('.get_site_url().')';
@@ -1389,7 +1389,7 @@ class SGAntiVirus {
 			$body_message .= "<br><br>Files:<br><br>".$message_files;
 			$body_message .= "<br><br>MD5:<br><pre>".print_r($md5_list, true)."</pre>";
 
-			if (function_exists('wp_mail') === false) 
+			if (function_exists('wp_mail') === false)
 			{
 				require_once(ABSPATH.'wp-includes'.DIRSEP.'pluggable.php');
 			}
@@ -1397,19 +1397,19 @@ class SGAntiVirus {
 			$result = wp_mail($mailto, $subject, $body_message, $headers, $attachments);
 			$result = wp_mail($mailto, $subject, $body_message, $headers);
 		}
-		
+
 		return $result;
 	}
-	
-	
+
+
 	public static function QuarantineFiles($files = array())
 	{
 		$fp = fopen(dirname(__FILE__).'/tmp/quarantine.log', 'a');
-		
+
 		$result = true;
-		
+
 		$quarantine_path = dirname(__FILE__).'/tmp/';
-		
+
 		//print_r($files);
 		if (count($files))
 		{
@@ -1419,17 +1419,17 @@ class SGAntiVirus {
 				{
 					$f_from = ABSPATH.'/'.$file;
 					$f_to = $quarantine_path.md5($file).'.tmp';
-					
+
 					//echo ABSPATH.'/'.$file."<br>";
-					
+
 					$a = date("Y-m-d H:i:s")." File ".$file."\n";
 					fwrite($fp, $a);
-					
+
 					// Move to quarantine
-					if (copy($f_from, $f_to) === false) 
+					if (copy($f_from, $f_to) === false)
 					{
 						$result = false;
-						
+
 						$a = date("Y-m-d H:i:s")." File is not moved to quarantine ".$file."\n";
 						fwrite($fp, $a);
 					}
@@ -1437,12 +1437,12 @@ class SGAntiVirus {
 						$a = date("Y-m-d H:i:s")." Moved to quarantine as ".$f_to."\n";
 						fwrite($fp, $a);
 					}
-					
+
 					// Delete from the server
 					if (unlink($f_from) === false)
 					{
 						$result = false;
-						
+
 						$a = date("Y-m-d H:i:s")." File is not deleted ".$file."\n";
 						fwrite($fp, $a);
 					}
@@ -1453,9 +1453,9 @@ class SGAntiVirus {
 				}
 			}
 		}
-		
+
 		fclose($fp);
-		
+
 		return $result;
 	}
 
@@ -1469,19 +1469,19 @@ class SGAntiVirus {
 		{
 			if ( jQuery('#registered').is(':checked') ) return true;
 			else {
-				alert('Confirmation is not checked.');	
+				alert('Confirmation is not checked.');
 				return false;
 			}
 		}
 		</script>
 		<form method="post" action="admin.php?page=plgavp_Antivirus" onsubmit="return form_ConfirmRegistration(this);">
-		
+
 			<h3>Registration</h3>
-			
+
 			<p>Click "Confirm Registration" button to complete registration process. Your website will be automatically registered on <a href="http://www.siteguarding.com">www.SiteGuarding.com</a>.<br></p>
-			
+
 			<p>Already registered? Go to <a href="admin.php?page=plgavp_Antivirus_settings_page">Antivirus Settings</a> page and enter your Access Key.</p>
-		
+
 			<table id="settings_page">
 
 			<tr class="line_4">
@@ -1490,51 +1490,51 @@ class SGAntiVirus {
 	            <input disabled type="text" name="domain" id="domain" value="<?php echo get_site_url(); ?>" class="regular-text">
 			</td>
 			</tr>
-			    
+
 			<tr class="line_4">
 			<th scope="row">Email</th>
 			<td>
 	            <input type="text" name="email" id="email" value="<?php echo get_option( 'admin_email' ); ?>" class="regular-text">
 	            <br />
-	            <span class="msg_alert">Email address must be valid. You will get your registration access key and reports by email.</span>  
+	            <span class="msg_alert">Email address must be valid. You will get your registration access key and reports by email.</span>
 			</td>
 			</tr>
-			
+
 			<tr class="line_4">
 			<th scope="row">Confirmation</th>
 			<td>
 	            <input name="registered" type="checkbox" id="registered" value="1"> I confirm to register my website on <a href="http://www.siteguarding.com">www.SiteGuarding.com</a>
 			</td>
 			</tr>
-			
+
 			</table>
-			
+
 		<?php
 		wp_nonce_field( 'name_254f4bd3ea8d' );
-		?>			
+		?>
 		<p class="submit">
 		  <input type="submit" name="submit" id="submit" class="button button-primary" value="Confirm Registration">
 		</p>
-		
+
 		<input type="hidden" name="page" value="plgavp_Antivirus"/>
 		<input type="hidden" name="action" value="ConfirmRegistration"/>
 		</form>
-		
+
 		<?php self::HelpBlock(); ?>
-			
+
 		<?php
-	}	
-	
-	
+	}
+
+
 	public static function page_PreScan($params)
 	{
-		
+
 		if (intval($params['scans']) == 30)
 		{
 			$txt = 'Congratulation. One more step to protect your website. Click START SCANNER button and get your security report.';
 			self::ShowMessage($txt);
 		}
-	 
+
 		?>
 		<form method="post" action="admin.php?page=plgavp_Antivirus">
 
@@ -1555,7 +1555,7 @@ if (intval($params['scans']) == 0 || $params['membership'] == 'free') {
 You have: <b><?php echo ucwords($params['membership']); ?> version</b> (ver. <?php echo SGAntiVirus_module::$antivirus_version; ?>)<br />
 
 Available Scans: <?php echo $params['scans']; ?><br />
-Valid till: <?php echo $params['exp_date']."&nbsp;&nbsp;"; 
+Valid till: <?php echo $params['exp_date']."&nbsp;&nbsp;";
 if ($params['exp_date'] < date("Y-m-d")) echo '<span class="msg_box msg_error">Expired</span>';
 if ($params['exp_date'] < date("Y-m-d", mktime(0, 0, 0, date("m")  , date("d")-7, date("Y"))) && $params['exp_date'] >= date("Y-m-d") ) echo '<span class="msg_box msg_warning">Will Expired Soon</span>';
 ?>
@@ -1569,7 +1569,7 @@ else $account_type_txt = 'Get PRO version of WP Antivirus Site Protection';
 
 
 <div class="mod-box"><div>
-<h3>Latest Reports</h3>	
+<h3>Latest Reports</h3>
 <?php
 $reports = $params['reports'];
 //print_r($params);
@@ -1593,22 +1593,22 @@ if (count($reports)) {
 ?>
 
 <img class="imgpos" alt="WP Antivirus Site Protection" src="<?php echo plugins_url('images/', __FILE__).'left_box.png'; ?>" width="110" height="70">
-			
+
 </div></div>
 
 
-<div class="mod-box"><div>	
-<h3>Antivirus Scanner</h3>		
+<div class="mod-box"><div>
+<h3>Antivirus Scanner</h3>
 <p>To start the scan process click "Start Scanner" button.</p>
 <p>Scanner will automatically collect and analyze the files of your website. The scanning process can take up to 10 mins (it depends of speed of your server and amount of the files to analyze). The copy of the report we will send by email for your records.</p>
-		
+
 		<?php
 		wp_nonce_field( 'name_254f4bd3ea8d' );
-		?>			
+		?>
 		<p class="submit startscanner">
 		  <input type="submit" name="submit" id="submit" class="button button-primary" value="Start Scanner">
 		</p>
-		
+
 		<input name="allow_scan" type="hidden" id="allow_scan" value="1">
 		<input type="hidden" name="page" value="plgavp_Antivirus"/>
 		<input type="hidden" name="action" value="StartScan"/>
@@ -1616,10 +1616,10 @@ if (count($reports)) {
 
 <p><b>Found suspicious file on your website?</b> Analyze it for free with our online tool antivirus. <a target="_blank" href="https://www.siteguarding.com/en/website-antivirus">Click here</a></p>
 
-<h3>Extra Options</h3>	
+<h3>Extra Options</h3>
 
 	<div class="divTable avpextraoption">
-	
+
 	<div class="divRow">
 	<div class="divCell avpextraoption_txt">Your website got hacked and blacklisted by Google? This is really bad, you are going to lose your visitors. We will help you to clean your website and remove from all blacklists.</div>
 	<div class="divCell">
@@ -1628,15 +1628,15 @@ if (count($reports)) {
 		</form>
 	</div>
 	</div>
-	
+
 	<div class="divRow"><div class="divCell">&nbsp;</div><div class="divCell"></div><div class="divCell"></div><div class="divCell"></div></div>
-	
+
 	<div class="divRow">
 	<div class="divCell avpextraoption_txt">Found suspicious files on your website? Send us request for free analyze. Our security experts will review your files and explain what to do.</div>
 	<div class="divCell">
 		<form method="post" action="admin.php?page=plgavp_Antivirus">
 		<?php
-		if ($params['membership'] == 'pro') 
+		if ($params['membership'] == 'pro')
 		{
 			?>
 			<input type="submit" name="submit" id="submit" class="button button-primary" value="Send Files For Analyze">
@@ -1646,8 +1646,8 @@ if (count($reports)) {
 			<input type="button" class="button button-primary" value="Send Files For Analyze" onclick="javascript:alert('Available in PRO version only. Please Upgrade to PRO version.');">
 			<?php
 		}
-		?>	
-		
+		?>
+
 		<?php
 		wp_nonce_field( 'name_254f4bd3ea8d' );
 		?>
@@ -1656,15 +1656,15 @@ if (count($reports)) {
 		</form>
 	</div>
 	</div>
-	
+
 	<div class="divRow"><div class="divCell">&nbsp;</div><div class="divCell"></div><div class="divCell"></div><div class="divCell"></div></div>
-	
+
 	<div class="divRow">
 	<div class="divCell avpextraoption_txt">Remove viruses from your website with one click.<br><span class="msg_alert">Please note: Hackers can inject malware codes inside of the normal files. We advice to send request to SiteGuarding.com for file review and analyze.</span></div>
 	<div class="divCell">
 		<form method="post" action="admin.php?page=plgavp_Antivirus">
 		<?php
-		if ($params['membership'] == 'pro') 
+		if ($params['membership'] == 'pro')
 		{
 			?>
 			<input type="submit" name="submit" id="submit" class="button button-primary" value="Quarantine & Remove malware">
@@ -1674,8 +1674,8 @@ if (count($reports)) {
 			<input type="button" class="button button-primary" value="Quarantine & Remove malware" onclick="javascript:alert('Available in PRO version only. Please Upgrade to PRO version.');">
 			<?php
 		}
-		?>	
-		
+		?>
+
 		<?php
 		wp_nonce_field( 'name_254f4bd3ea8d' );
 		?>
@@ -1684,9 +1684,9 @@ if (count($reports)) {
 		</form>
 	</div>
 	</div>
-	
+
 	<div class="divRow"><div class="divCell">&nbsp;</div><div class="divCell"></div><div class="divCell"></div><div class="divCell"></div></div>
-	
+
 	<div class="divRow">
 	<div class="divCell avpextraoption_txt">Select Security Package for Your Website. Server-side scanning & file change monitoring. Daily analyze of all the changes on your website. Malware removal from already hacked website and much more</div>
 	<div class="divCell">
@@ -1696,17 +1696,17 @@ if (count($reports)) {
 	</div>
 	</div>
 	</div>
-	
-	
+
+
 
 
 
 <?php
-if ($params['membership'] != 'pro') 
+if ($params['membership'] != 'pro')
 {
 	?>
 	<p><span class="msg_box msg_error">Quarantine & Malware Removal feature is disabled. Available in PRO version only. <a href="https://www.siteguarding.com/en/buy-service/antivirus-site-protection?domain=<?php echo urlencode( get_site_url() ); ?>&email=<?php echo urlencode(get_option( 'admin_email' )); ?>" target="_blank">Upgrade to PRO version</a></span></p>
-	<?php	
+	<?php
 }
 
 if ( ($params['last_scan_files_counters']['main'] > 0 || $params['last_scan_files_counters']['heuristic'] > 0) && $params['membership'] != 'free' )
@@ -1722,28 +1722,28 @@ if ( ($params['last_scan_files_counters']['main'] > 0 || $params['last_scan_file
 				{
 					if (!file_exists(ABSPATH.'/'.$tmp_file)) unset($params['last_scan_files']['main'][$k]);
 				}
-				
+
 				if (count($params['last_scan_files']['main']) > 0)
 {
 					?>
 					<div class="avp_latestfiles_block">
 					<h4>Action is required</h4>
-					
+
 					<?php
 					foreach ($params['last_scan_files']['main'] as $tmp_file)
 					{
 						echo '<p>'.$tmp_file.'</p>';
 					}
 					?>
-	
+
 					<br />
-					
+
 					<div class="divTable">
 					<div class="divRow">
 					<div class="divCell">
 					<form method="post" action="admin.php?page=plgavp_Antivirus">
 					<?php
-					if ($params['membership'] == 'pro') 
+					if ($params['membership'] == 'pro')
 					{
 						?>
 						<input type="submit" name="submit" id="submit" class="button button-primary" value="Send Files to SiteGuarding.com">
@@ -1753,8 +1753,8 @@ if ( ($params['last_scan_files_counters']['main'] > 0 || $params['last_scan_file
 						<input type="button" class="button button-primary" value="Send Files to SiteGuarding.com" onclick="javascript:alert('Available in PRO version only. Please Upgrade to PRO version.');">
 						<?php
 					}
-					?>	
-					
+					?>
+
 					<?php
 					wp_nonce_field( 'name_254f4bd3ea8d' );
 					?>
@@ -1762,13 +1762,13 @@ if ( ($params['last_scan_files_counters']['main'] > 0 || $params['last_scan_file
 					<input type="hidden" name="action" value="SendFilesForAnalyze"/>
 					</form>
 					</div>
-					
+
 					<div class="divCell">&nbsp;</div>
 
 					<div class="divCell">
 					<form method="post" action="admin.php?page=plgavp_Antivirus">
 					<?php
-					if ($params['membership'] == 'pro') 
+					if ($params['membership'] == 'pro')
 					{
 						?>
 						<input type="submit" name="submit" id="submit" class="button button-primary" value="Quarantine & Remove malware">
@@ -1778,8 +1778,8 @@ if ( ($params['last_scan_files_counters']['main'] > 0 || $params['last_scan_file
 						<input type="button" class="button button-primary" value="Quarantine & Remove malware" onclick="javascript:alert('Available in PRO version only. Please Upgrade to PRO version.');">
 						<?php
 					}
-					?>	
-					
+					?>
+
 					<?php
 					wp_nonce_field( 'name_254f4bd3ea8d' );
 					?>
@@ -1787,16 +1787,16 @@ if ( ($params['last_scan_files_counters']['main'] > 0 || $params['last_scan_file
 					<input type="hidden" name="action" value="QuarantineFiles"/>
 					<input type="hidden" name="filelist" value="main"/>
 					</form>
-					
+
 					</div></div></div>
-					* Please note: Hackers can inject malware codes inside of the normal files. If you delete these files, website can stop to work or will be not stable. We advice to send request to SiteGuarding.com for file review and analyze. 
-					
+					* Please note: Hackers can inject malware codes inside of the normal files. If you delete these files, website can stop to work or will be not stable. We advice to send request to SiteGuarding.com for file review and analyze.
+
 					</div>
 					<?php
 				}
 
 			}
-			
+
 			if (count($params['last_scan_files']['heuristic']))
 			{
 				// Check files
@@ -1804,7 +1804,7 @@ if ( ($params['last_scan_files_counters']['main'] > 0 || $params['last_scan_file
 				{
 					if (!file_exists(ABSPATH.'/'.$tmp_file)) unset($params['last_scan_files']['heuristic'][$k]);
 				}
-				
+
 				if (count($params['last_scan_files']['heuristic']) > 0)
 				{
 					?>
@@ -1815,11 +1815,11 @@ if ( ($params['last_scan_files_counters']['main'] > 0 || $params['last_scan_file
 					{
 						echo '<p>'.$tmp_file.'</p>';
 					}
-					
+
 					?>
 					<br />
 					<?php
-					
+
 					if ($params['whitelist_filters_enabled'] == 1)
 					{
 						?>
@@ -1827,17 +1827,17 @@ if ( ($params['last_scan_files_counters']['main'] > 0 || $params['last_scan_file
 						<?php
 					}
 					?>
-					
-					
+
+
 					<div class="divTable">
 					<div class="divRow">
 					<div class="divCell">
-					
+
 					<form method="post" action="admin.php?page=plgavp_Antivirus">
 					<?php
 					wp_nonce_field( 'name_254f4bd3ea8d' );
-					
-					if ($params['membership'] == 'pro') 
+
+					if ($params['membership'] == 'pro')
 					{
 						?>
 						<input type="submit" name="submit" id="submit" class="button button-primary" value="Send Files to SiteGuarding.com">
@@ -1847,20 +1847,20 @@ if ( ($params['last_scan_files_counters']['main'] > 0 || $params['last_scan_file
 						<input type="button" class="button button-primary" value="Send Files to SiteGuarding.com" onclick="javascript:alert('Available in PRO version only. Please Upgrade to PRO version.');">
 						<?php
 					}
-					?>	
-					
+					?>
+
 					<input type="hidden" name="page" value="plgavp_Antivirus"/>
 					<input type="hidden" name="action" value="SendFilesForAnalyze"/>
 					</form>
-					
+
 					</div>
-					
+
 					<div class="divCell">&nbsp;</div>
 
 					<div class="divCell">
 					<form method="post" action="admin.php?page=plgavp_Antivirus">
 					<?php
-					if ($params['membership'] == 'pro') 
+					if ($params['membership'] == 'pro')
 					{
 						?>
 						<input type="submit" name="submit" id="submit" class="button button-primary" value="Quarantine & Remove malware">
@@ -1870,8 +1870,8 @@ if ( ($params['last_scan_files_counters']['main'] > 0 || $params['last_scan_file
 						<input type="button" class="button button-primary" value="Quarantine & Remove malware" onclick="javascript:alert('Available in PRO version only. Please Upgrade to PRO version.');">
 						<?php
 					}
-					?>	
-					
+					?>
+
 					<?php
 					wp_nonce_field( 'name_254f4bd3ea8d' );
 					?>
@@ -1879,11 +1879,11 @@ if ( ($params['last_scan_files_counters']['main'] > 0 || $params['last_scan_file
 					<input type="hidden" name="action" value="QuarantineFiles"/>
 					<input type="hidden" name="filelist" value="heuristic"/>
 					</form>
-					
+
 					</div></div></div>
-					* Please note: Hackers can inject malware codes inside of the normal files. If you delete these files, website can stop to work or will be not stable. We advice to send request to SiteGuarding.com for file review and analyze. 
-					
-					
+					* Please note: Hackers can inject malware codes inside of the normal files. If you delete these files, website can stop to work or will be not stable. We advice to send request to SiteGuarding.com for file review and analyze.
+
+
 					</div>
 					<?php
 				}
@@ -1893,9 +1893,9 @@ if ( ($params['last_scan_files_counters']['main'] > 0 || $params['last_scan_file
 
 
 <img class="imgpos" alt="WP Antivirus Site Protection" src="<?php echo plugins_url('images/', __FILE__).'mid_box.png'; ?>" width="110" height="70">
-			
+
 </div></div>
-		
+
 		<?php self::HelpBlock(); ?>
 
 </div>
@@ -1908,59 +1908,59 @@ if ($params['membership'] != 'pro') {
 		<img class="effect7" src="<?php echo plugins_url('images/rek1.png', __FILE__); ?>" />
 		</a>
 	</div>
-	
+
 	<div class="RekaBlock">
 		<a href="http://www.getbestwebdesign.com/">
 		<img class="effect7" src="<?php echo plugins_url('images/rek2.png', __FILE__); ?>" />
 		</a>
 	</div>
-	
+
 	<div class="RekaBlock">
 		<a href="https://www.siteguarding.com/en/prices">
 		<img class="effect7" src="<?php echo plugins_url('images/rek3.png', __FILE__); ?>" />
 		</a>
 	</div>
-	
+
 	<div class="RekaBlock">
 		<a href="https://www.siteguarding.com/en/sitecheck">
 		<img class="effect7" src="<?php echo plugins_url('images/rek4.png', __FILE__); ?>" />
 		</a>
 	</div>
-	
+
 	<div class="RekaBlock">
 		<a href="https://www.siteguarding.com/en/buy-service/antivirus-site-protection">
 		<img class="effect7" src="<?php echo plugins_url('images/rek5.png', __FILE__); ?>" />
 		</a>
 	</div>
-	
+
 	<div class="RekaBlock">
 		Remove these ads?<br />
 		<a href="https://www.siteguarding.com/en/buy-service/antivirus-site-protection">Upgrade to PRO version</a>
 	</div>
-	
+
 </div>
 <?php
 }
 ?>
 </div>
-</div>	
-		
+</div>
+
 		<?php
 	}
-	
-	
-	
+
+
+
 	public static function ScanProgress($session_id = '', $wp_path = '/', $params = array(), $avp_license_info = array())
 	{
 		$domain = get_site_url();
 		$session_report_key = md5($domain.'-'.rand(1,1000).'-'.time());
 		?>
-		
+
         <script>
             jQuery(document).ready(function(){
-            	
+
             	var refreshIntervalId;
-            	
+
          		<?php
                	$ajax_url = plugins_url('/ajax.php', __FILE__);
                	?>
@@ -1978,26 +1978,26 @@ if ($params['membership'] != 'pro') {
 						membership: "<?php echo $avp_license_info['membership']; ?>"
 					},
 					function(data){
-						
-						if (data=='') 
+
+						if (data=='')
 						{
 							alert('Your server lost connection. You will be redirected to SiteGuarding.com to view your report.');
 							document.location.href = 'https://www.siteguarding.com/antivirus/viewreport?report_id=<?php echo $session_report_key; ?>';
 							return;
 						}
-						
+
 						ShowReportText(data);
 					}
 				);
-				
-				
+
+
 				function GetProgress()
 				{
 	         		<?php
 	               	$ajax_url = plugins_url('/ajax.php', __FILE__);
 	               	?>
 	               	var link = "<?php echo $ajax_url; ?>";
-	
+
 					jQuery.post(link, {
 						    action: "GetScanProgress_AJAX",
 							session_id: "<?php echo $session_id; ?>"
@@ -2012,17 +2012,17 @@ if ($params['membership'] != 'pro') {
 						    	TryToGetReport();
 						    }
 						}
-					);	
+					);
 				}
-				
-				
+
+
 				function TryToGetReport()
 				{
 	         		<?php
 	               	$ajax_url = plugins_url('/ajax.php', __FILE__);
 	               	?>
 	               	var link = "<?php echo $ajax_url; ?>";
-	
+
 					jQuery.post(link, {
 						    action: "GetScanReport_AJAX",
 							session_report_key: "<?php echo $session_report_key; ?>"
@@ -2033,40 +2033,40 @@ if ($params['membership'] != 'pro') {
 						}
 					);
 				}
-				
+
 				function ShowReportText(data)
 				{
 					jQuery("#progress_bar_process").css('width', '100%');
 					jQuery("#progress_bar").hide();
-					
+
 					clearInterval(refreshIntervalId);
-					
+
                     jQuery("#report_area").html(data);
                     jQuery("#back_bttn").show();
                     jQuery("#help_block").show();
-                    jQuery("#rek_block").hide();	
-                    jQuery(".avp_reviewreport_block").hide();	
+                    jQuery("#rek_block").hide();
+                    jQuery(".avp_reviewreport_block").hide();
 				}
-				
+
 				refreshIntervalId =  setInterval(GetProgress, 3000);
-				
+
             });
         </script>
-        
+
         <p class="msg_box msg_info avp_reviewreport_block">If the scanning process takes too long. Get the results using the link<br /><a href="https://www.siteguarding.com/antivirus/viewreport?report_id=<?php echo $session_report_key; ?>" target="_blank">https://www.siteguarding.com/antivirus/viewreport?report_id=<?php echo $session_report_key; ?></a></p>
-        
+
         <div id="progress_bar"><div id="progress_bar_process"></div><div id="progress_bar_txt">Scanning process started...</div></div>
-        
+
         <div id="report_area"></div>
-        
+
         <div id="help_block" style="display: none;">
-		
+
 		<a href="http://www.siteguarding.com" target="_blank">SiteGuarding.com</a> - Website Security. Professional security services against hacker activity.
-		
+
 		</div>
-        
+
         <a id="back_bttn" style="display: none;" class="button button-primary" href="admin.php?page=plgavp_Antivirus">Back</a>
-        
+
         <div id="rek_block">
 			<a href="https://www.siteguarding.com" target="_blank">
 				<img class="effect7" src="<?php echo plugins_url('images/rek_scan.jpg', __FILE__); ?>">
@@ -2074,17 +2074,17 @@ if ($params['membership'] != 'pro') {
 		</div>
 
 
-		
+
 		<?php
 	}
-	
-	
+
+
 
 
 	public static function GetLicenseInfo($domain, $access_key)
 	{
 		$link = SITEGUARDING_SERVER.'?action=licenseinfo&type=json&data=';
-		
+
 	    $data = array(
 			'domain' => $domain,
 			'access_key' => $access_key
@@ -2093,43 +2093,43 @@ if ($params['membership'] != 'pro') {
 	    //$msg = file_get_contents($link);
 		include_once(dirname(__FILE__).'/HttpClient.class.php');
 		$HTTPClient = new HTTPClient();
-		
+
 		$msg = $HTTPClient->get($link);
-	    
+
 	    $msg = trim($msg);
 	    if ($msg == '') return false;
-	    
-	    return (array)json_decode($msg, true);
-	}
-	
-	
-	public static function GetProgressInfo($domain, $access_key)
-	{
-		$link = SITEGUARDING_SERVER.'?action=progressinfo&type=json&data=';
-		
-	    $data = array(
-			'domain' => $domain,
-			'access_key' => $access_key
-		);
-	    $link .= base64_encode(json_encode($data));
-	    //$msg = file_get_contents($link);
-		include_once(dirname(__FILE__).'/HttpClient.class.php');
-		$HTTPClient = new HTTPClient();
-		
-		$msg = $HTTPClient->get($link);
-	    
-	    $msg = trim($msg);
-	    if ($msg == '') return false;
-	    
+
 	    return (array)json_decode($msg, true);
 	}
 
-	
+
+	public static function GetProgressInfo($domain, $access_key)
+	{
+		$link = SITEGUARDING_SERVER.'?action=progressinfo&type=json&data=';
+
+	    $data = array(
+			'domain' => $domain,
+			'access_key' => $access_key
+		);
+	    $link .= base64_encode(json_encode($data));
+	    //$msg = file_get_contents($link);
+		include_once(dirname(__FILE__).'/HttpClient.class.php');
+		$HTTPClient = new HTTPClient();
+
+		$msg = $HTTPClient->get($link);
+
+	    $msg = trim($msg);
+	    if ($msg == '') return false;
+
+	    return (array)json_decode($msg, true);
+	}
+
+
 	public static function sendRegistration($domain, $email, $access_key = '', $errors = '')
 	{
 		// Send data
 	    $link = SITEGUARDING_SERVER.'?action=register&type=json&data=';
-	    
+
 	    $data = array(
 			'domain' => $domain,
 			'email' => $email,
@@ -2140,81 +2140,81 @@ if ($params['membership'] != 'pro') {
 	    //$msg = trim(file_get_contents($link));
 		include_once(dirname(__FILE__).'/HttpClient.class.php');
 		$HTTPClient = new HTTPClient();
-		
+
 		$msg = $HTTPClient->get($link);
-	    
+
 	    if ($msg == '') return true;
 	    else return $msg;
 	}
 
-	
+
 	public static function checkServerSettings($return_error_names = false)
 	{
 		$error_name = array();
 		$error = 0;
-		
+
 		// Check tmp folder is writable
 		if (!is_writable(dirname(__FILE__).'/tmp/'))
 		{
-			chmod ( dirname(__FILE__).'/tmp/' , 0777 ); 
+			chmod ( dirname(__FILE__).'/tmp/' , 0777 );
 			if (!is_writable(dirname(__FILE__).'/tmp/'))
 			{
 				$error = 1;
 				$error_name[] = 'tmp is not writable';
 				self::ShowMessage('Folder '.dirname(__FILE__).'/tmp/'.' is not writable.');
-				
+
 				?>
 				Please change folder <?php echo dirname(__FILE__).'/tmp/'; ?>permission to 777 to make it writable.
 				<?php
 			}
 		}
-		
-		
+
+
 		// Check ssh
-		if ( !function_exists('exec') ) 
+		if ( !function_exists('exec') )
 		{
 		    if (!class_exists('ZipArchive'))
 		    {
 				$error = 1;
 				$error_name[] = 'exec & ZipArchive';
 				self::ShowMessage('ZipArchive class is not installed on your server.');
-				
+
 				?>
 				Please ask your hoster support to install or enable PHP ZipArchive class for your server. More information about ZipArchive class please read here <a href="http://bd1.php.net/manual/en/class.ziparchive.php" target="_blank">http://bd1.php.net/manual/en/class.ziparchive.php</a>
 				<?php
 			}
 		}
-		
-		
+
+
 		// Check CURL
-		if ( !function_exists('curl_init') ) 
+		if ( !function_exists('curl_init') )
 		{
 			$error = 1;
 			$error_name[] = 'CURL';
 			self::ShowMessage('CURL is not installed on your server.');
-			
+
 			?>
 			Please ask your hoster support to install or enable CURL for your server.
 			<?php
 		}
-		
-		
+
+
 		if ($return_error_names) return json_encode($error_name);
 		if ($error == 1) return false;
 		else return true;
 	}
-	
+
 	public static function ShowMessage($txt)
 	{
 		echo '<div id="setting-error-settings_updated" class="updated settings-error"><p><strong>'.$txt.'</strong></p></div>';
 	}
-	
-	
+
+
 	public static function HelpBlock()
 	{
 		?>
 		<h3 class="avp_header icon_contacts">Support</h3>
-		
+
 		<p>
 		For malware removal services please <a target="_blank" href="https://www.siteguarding.com/en/services/malware-removal-service">click here</a>.
 		</p>
@@ -2229,7 +2229,7 @@ if ($params['membership'] != 'pro') {
 		</p>
 		<?php
 	}
-	
+
 }
 
 
