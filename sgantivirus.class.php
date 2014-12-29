@@ -1,7 +1,8 @@
 <?php
+
 class SGAntiVirus_module
 {
-	public static  $antivirus_version = '4.8';
+	public static  $antivirus_version = '4.8.1';
 	public static  $antivirus_platform = 'wordpress';
 	
 	public static  $debug = true;
@@ -24,6 +25,17 @@ class SGAntiVirus_module
 		fclose($fp);	
 	}
 	
+	public static function AntivirusFileLock()
+	{
+		$lockFile = dirname(__FILE__).'/tmp/scan.lock';
+		
+		$lockFp = fopen($lockFile, 'w');
+		
+		flock($lockFp, LOCK_UN);
+		unlink($lockFile);
+			
+	}
+	
 	public static function scan($check_session = true, $show_results = true)
 	{
 		// Skip the 2nd scan process
@@ -36,12 +48,10 @@ class SGAntiVirus_module
 			exit;
 		}
 		
+		register_shutdown_function('self::AntivirusFileLock');
+		
 		$lockFp = fopen($lockFile, 'w');
 		
-		register_shutdown_function(function() use ($lockFp, $lockFile) {
-		    flock($lockFp, LOCK_UN);
-		    unlink($lockFile);
-		});
 		
 		
 		// Start scanning process
@@ -472,7 +482,7 @@ class SGAntiVirus_module
 					'do_evristic' => $do_evristic,
 					'archive_format' => $archive_format))
 			);
-			
+
 			$file_url = str_replace(SCAN_PATH, "/", $archive_filename);
 			$error_msg = 'Web pack url: '.$file_url;
 			if (self::$debug) self::DebugLog($error_msg);
@@ -673,7 +683,7 @@ class SGAntiVirus_module
 	}
 
 
-	public static function UploadSingleFile($file, $action, $post_data, $file_url)
+	public static function UploadSingleFile($file, $action, $post_data)
 	{
 		/*ini_set('file_uploads', '1');
 		ini_set('post_max_size', '256M');
