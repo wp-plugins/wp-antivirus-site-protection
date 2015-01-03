@@ -2,7 +2,7 @@
 
 class SGAntiVirus_module
 {
-	public static  $antivirus_version = '4.8.1';
+	public static  $antivirus_version = '4.8.2';
 	public static  $antivirus_platform = 'wordpress';
 	
 	public static  $debug = true;
@@ -683,7 +683,7 @@ class SGAntiVirus_module
 	}
 
 
-	public static function UploadSingleFile($file, $action, $post_data)
+	public static function UploadSingleFile($file, $action, $post_data, $file_url)
 	{
 		/*ini_set('file_uploads', '1');
 		ini_set('post_max_size', '256M');
