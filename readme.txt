@@ -3,8 +3,8 @@ Contributors: SiteGuarding
 Donate link: https://www.siteguarding.com/en/website-extensions
 Tags: antivirus, Anti Virus, malware, virus, scanner, security, block, backdoor, attack, hack, hacker, hacking, protection, website security, scan, malware removal, virus detection, iframe, malware, protect, base64, google safe browsing, hacking, htaccess, injection, prevent, secure website, security plugin, wordpress security, vulnerability
 Requires at least: 3.0
-Tested up to: 4.1
-Stable tag: 4.8.2
+Tested up to: 4.1.1
+Stable tag: 5.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 

@@ -1,8 +1,10 @@
 <?php
 
+include_once('zip.class.php');
+
 class SGAntiVirus_module
 {
-	public static  $antivirus_version = '4.8.2';
+	public static  $antivirus_version = '5.0';
 	public static  $antivirus_platform = 'wordpress';
 	
 	public static  $debug = true;
@@ -33,13 +35,19 @@ class SGAntiVirus_module
 		
 		flock($lockFp, LOCK_UN);
 		unlink($lockFile);
-			
 	}
 	
 	public static function scan($check_session = true, $show_results = true)
 	{
+	    define('DEBUG_FILELIST', false);
+        define('CALLBACK_PACK_FILE', false);
+        
+       
+	    if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') define(DIRSEP, '\\');
+		else define(DIRSEP, '/');
+        
 		// Skip the 2nd scan process
-		$lockFile = dirname(__FILE__).'/tmp/scan.lock';
+		$lockFile = dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'scan.lock';
 		
 		if (file_exists($lockFile) && (time() - filemtime($lockFile)) < 60*5)
 		{
@@ -64,18 +72,16 @@ class SGAntiVirus_module
 		
 		register_shutdown_function('self::AntivirusFinished');
 		
-		if (file_exists(dirname(__FILE__).'/exclude_folders.php'))
+		if (file_exists(dirname(__FILE__).DIRSEP.'exclude_folders.php'))
 		{
 			$error_msg = 'Exclude folder file loaded';
 			if (self::$debug) self::DebugLog($error_msg);
 			
-			require_once(dirname(__FILE__).'/exclude_folders.php');	
+			require_once(dirname(__FILE__).DIRSEP.'exclude_folders.php');	
 		}
 		
 		
-		if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') define(DIRSEP, '\\');
-		else define(DIRSEP, '/');
-		
+	
 		$tmp_result = set_time_limit ( 7200 );
 		
 		$error_msg = 'Change Time limit '.self::$bool_list[intval($tmp_result)];
@@ -94,6 +100,7 @@ class SGAntiVirus_module
 		if (self::$debug) self::DebugLog($error_msg);
 		
 		unlink(dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'flag_terminated.tmp');
+        unlink(dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'filelist.txt');
 		$error_msg = 'Remove '.dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'flag_terminated.tmp';
 		if (self::$debug) self::DebugLog($error_msg);
 		
@@ -178,187 +185,294 @@ class SGAntiVirus_module
 		$error_msg = 'Start - Packing block';
 		if (self::$debug) self::DebugLog($error_msg);
 		
-		$error_msg = 'Collecting info about the files';
-		if (self::$debug) self::DebugLog($error_msg);
-		
-		$path[] = str_replace(DIRSEP.DIRSEP, DIRSEP, $scan_path.DIRSEP."*");
-		$files_list = array();
+        
 
-		// Prepare exclude folders
+
+		$error_msg = 'Collecting info about the files [NEW METHOD]';
+		if (self::$debug) self::DebugLog($error_msg);
+
 		if (count($exclude_folders))
 		{
 			foreach ($exclude_folders as $k => $ex_folder)
 			{
 				$ex_folder = $scan_path.trim($ex_folder);
-				$exclude_folders[$k] = str_replace(DIRSEP.DIRSEP, DIRSEP, $ex_folder);	
+				$exclude_folders[$k] = trim(str_replace(DIRSEP.DIRSEP, DIRSEP, $ex_folder));	
 			}
 		}
 		else $exclude_folders = array();
-
+		
 		$error_msg = 'Excluded Folders: '.count($exclude_folders);
 		if (self::$debug) self::DebugLog($error_msg);
 		
-		if (self::$debug_filelist)
+		$error_msg = print_r($exclude_folders, true);
+		if (self::$debug && count($exclude_folders) > 0) DebugLog($error_msg);
+		
+		
+		
+		$filter = function ($file, $key, $iterator) use ($exclude_folders) 
 		{
-			$collected_filelist = dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'filelist.txt';
-			$fp = fopen($collected_filelist, 'w');
-		}
-
-		// Collect all files
-		while(count($path) != 0)
-		{
-			$v = array_shift($path);
+		    if ($iterator->hasChildren() && !in_array($file->getPathname().DIRSEP, $exclude_folders)) 
+			{
+		        return true;
+		    }
+		    return $file->isFile();
+		};
 			
-			
-			foreach(glob($v) as $item)
-			{
-				 if (is_dir($item))
-				 {
-				 	$item = str_replace(DIRSEP.DIRSEP, DIRSEP, $item);
-				 	
-                 	// Check in exludes
-                 	if (count($exclude_folders) > 0)
-                 	{
-                 		if (!in_array($item . DIRSEP, $exclude_folders)) 
-						{
-							$path[] = $item . DIRSEP . '*';
-							if (self::$debug) self::DebugLog('+++ '.$item . DIRSEP);
-						}
-						else if (self::$debug) self::DebugLog('--- '.$item . DIRSEP);
-                 	}
-					else { 
-						$path[] = $item . DIRSEP . '*'; 
-						//if (self::$debug) self::DebugLog('+++ '.$item . DIRSEP);
-					}
+		$Directory = new RecursiveDirectoryIterator($scan_path);
+		if (count($exclude_folders)) $Iterator = new RecursiveIteratorIterator(new RecursiveCallbackFilterIterator($Directory, $filter));
+		else $Iterator = new RecursiveIteratorIterator($Directory);
+		$include_extensions = array(
+			'inc',
+			'php',
+			'php4',
+			'php5',
+			'phtml',
+			'js',
+			'html',
+			'htm',
+			'cgi',
+			'pl',
+			'so',
+			'sh',
+			'htaccess'
+		);
 
-					
-				 }
-				 elseif (is_file($item))
-				 {
-					$filename = $item;
-					$file_ext = strtolower( substr( $filename, strrpos($filename, ".") ) );
-					switch ($file_ext)
-					{
-						case '.inc':
-						case '.php':
-						case '.php4':
-						case '.php5':
-						case '.phtml':
-						case '.js':
-						case '.html':
-						case '.htm':
-						case '.cgi':
-						case '.pl':
-						case '.so':
-						case '.sh':
-							
-							$item = str_replace(SCAN_PATH, "", $item);
-							if ($item[0] == "\\" || $item[0] == "/") $item[0] = "";
-							$item = trim($item);
-							if (self::$debug_filelist)
-							{
-								fwrite($fp, $item."\n");
-							}
-							else $files_list[] = $item;
-							break;
-					}
-				}
-			}
-		}
-
-
-
-		// Collect all hidden files
-		$error_msg = 'Start collecting the hidden files';
-		if (self::$debug) self::DebugLog($error_msg);
+		$Regex = new RegexIterator($Iterator, '/^.+\.(?:'.implode("|", $include_extensions).')$/i', RecursiveRegexIterator::GET_MATCH);
+		$files_list = array();
 		
-		
-	    function glob_recursive($directory, $exclude_folders = array(), &$directories = array()) 
-		{
-	        foreach(glob($directory, GLOB_ONLYDIR | GLOB_NOSORT) as $folder) 
-			{
-             	// Check in exludes
-             	if (count($exclude_folders) > 0)
-             	{
-             		$folder = str_replace(DIRSEP.DIRSEP, DIRSEP, $folder);
-             		
-             		$flag_exclude = false;
-             		foreach ($exclude_folders as $excl_folder)
-             		{
-             			if ( strpos($folder.DIRSEP, $excl_folder ) !== false)
-             			{
-             				// This folder must be excluded
-             				$flag_exclude = true;
-             				break;
-             			}
-             		}
-             		if ($flag_exclude === false) 
-					{
-						$directories[] = $folder . DIRSEP . '*';
-						if (SGAntiVirus_module::$debug && SGAntiVirus_module::$debug_filelist) SGAntiVirus_module::DebugLog('+++ '.$folder . DIRSEP);
-					}
-					//else if (SGAntiVirus_module::$debug && SGAntiVirus_module::$debug_filelist) SGAntiVirus_module::DebugLog('--- '.$folder . DIRSEP);
-             	}
-				else { 
-					$directories[] = $folder . DIRSEP . '*'; 
-					//if (SGAntiVirus_module::$debug) SGAntiVirus_module::DebugLog('+++ '.$folder . DIRSEP);
-				}
-				
-	            glob_recursive("{$folder}/*", $exclude_folders, $directories);
-	        }
-	    }
 
-		$directory = SCAN_PATH;
-	    glob_recursive($directory, $exclude_folders, $directories);
-	    foreach($directories as $directory) 
-		{
-            foreach(glob("{$directory}/.*") as $file) 
+		try {
+			foreach ($Regex as $k => $v) 
 			{
-            	$tmp_basename = basename($file);
-            	if ($tmp_basename != '.' && $tmp_basename != '..')
-            	{
-            		$file = str_replace(SCAN_PATH, "", $file);
-            		if ($file[0] == DIRSEP) $file[0] = " ";
-            		$file = trim($file);
-            		
-					if (self::$debug_filelist)
-					{
-						fwrite($fp, trim($file)."\n");
-					}
-					else $files_list[] = $file;
-            	}
-            }
-	    }
-
-		if (self::$debug_filelist)
-		{
-			fclose($fp);
-		}
-	    
-		$error_msg = 'Save collected file list';
-		if (self::$debug) self::DebugLog($error_msg);
-		
-		$collected_filelist = dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'filelist.txt';
-		if (!self::$debug_filelist)
-		{
-			$fp = fopen($collected_filelist, 'w');
-			$status = fwrite($fp, implode("\n", $files_list));
-			fclose($fp);
-			if ($status === false)
-			{
-				$error_msg = 'Cant save information about the collected file '.$collected_filelist;
-				if (self::$debug) self::DebugLog($error_msg);
-				//echo $error_msg;
-				//exit;
-				
-				// Turn ZIP mode
-				$ssh_flag = false;
+				$item = str_replace($scan_path, "", $k);
+				if ($item[0] == "\\" || $item[0] == "/") $item[0] = "";
+				$item = trim($item);
+				$files_list[] = $item;
+				//echo $key."<br>";
 			}
 			
-			$error_msg = 'Total files: '.count($files_list);
+			$error_msg = 'Save collected file list';
 			if (self::$debug) self::DebugLog($error_msg);
+	
+			$collected_filelist = dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'filelist.txt';
+			if (!DEBUG_FILELIST)
+			{
+				$fp = fopen($collected_filelist, 'w');
+				$status = fwrite($fp, implode("\n", $files_list));
+				fclose($fp);
+				if ($status === false)
+				{
+					$error_msg = 'Cant save information about the collected file '.$collected_filelist;
+					if (self::$debug) self::DebugLog($error_msg);
+					//echo $error_msg;
+					//exit;
+					
+					// Turn ZIP mode
+					$ssh_flag = false;
+				}
+				
+				$error_msg = 'Total files: '.count($files_list);
+				if (self::$debug) self::DebugLog($error_msg);
+			}
+			
+		} catch (Exception $e) {
+			$error_msg = 'Caught exception: '. $e->getMessage();
+			if (self::$debug) self::DebugLog($error_msg);
+			
+			$files_list = array();	// Prepare for new file scan
 		}
 		
+		if (count($files_list) == 0)
+		{
+			// Try old methods
+							$error_msg = 'Collecting info about the files [OLD METHOD]';
+							if (self::$debug) self::DebugLog($error_msg);
+							
+							$path[] = str_replace(DIRSEP.DIRSEP, DIRSEP, $scan_path.DIRSEP."*");
+							$files_list = array();
+					
+							// Prepare exclude folders
+							if (count($exclude_folders))
+							{
+								foreach ($exclude_folders as $k => $ex_folder)
+								{
+									$ex_folder = $scan_path.trim($ex_folder);
+									$exclude_folders[$k] = str_replace(DIRSEP.DIRSEP, DIRSEP, $ex_folder);	
+								}
+							}
+							else $exclude_folders = array();
+					
+							$error_msg = 'Excluded Folders: '.count($exclude_folders);
+							if (self::$debug) self::DebugLog($error_msg);
+							
+							if (DEBUG_FILELIST)
+							{
+								$collected_filelist = dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'filelist.txt';
+								$fp = fopen($collected_filelist, 'w');
+							}
+					
+							// Collect all files
+							while(count($path) != 0)
+							{
+								$v = array_shift($path);
+								
+								
+								foreach(glob($v) as $item)
+								{
+									 if (is_dir($item))
+									 {
+									 	$item = str_replace(DIRSEP.DIRSEP, DIRSEP, $item);
+									 	
+					                 	// Check in exludes
+					                 	if (count($exclude_folders) > 0)
+					                 	{
+					                 		if (!in_array($item . DIRSEP, $exclude_folders)) 
+											{
+												$path[] = $item . DIRSEP . '*';
+												if (self::$debug) self::DebugLog('+++ '.$item . DIRSEP);
+											}
+											else if (self::$debug) self::DebugLog('--- '.$item . DIRSEP);
+					                 	}
+										else { 
+											$path[] = $item . DIRSEP . '*'; 
+											//if (self::$debug) self::DebugLog('+++ '.$item . DIRSEP);
+										}
+					
+										
+									 }
+									 elseif (is_file($item))
+									 {
+										$filename = $item;
+										$file_ext = strtolower( substr( $filename, strrpos($filename, ".") ) );
+										switch ($file_ext)
+										{
+											case '.inc':
+											case '.php':
+											case '.php4':
+											case '.php5':
+											case '.phtml':
+											case '.js':
+											case '.html':
+											case '.htm':
+											case '.cgi':
+											case '.pl':
+											case '.so':
+											case '.sh':
+												
+												$item = str_replace(SCAN_PATH, "", $item);
+												if ($item[0] == "\\" || $item[0] == "/") $item[0] = "";
+												$item = trim($item);
+												if (DEBUG_FILELIST)
+												{
+													fwrite($fp, $item."\n");
+												}
+												else $files_list[] = $item;
+												break;
+										}
+									}
+								}
+							}
+					
+					
+					
+							// Collect all hidden files
+							$error_msg = 'Start collecting the hidden files';
+							if (self::$debug) self::DebugLog($error_msg);
+							
+							
+						    function glob_recursive($directory, $exclude_folders = array(), &$directories = array()) 
+							{
+						        foreach(glob($directory, GLOB_ONLYDIR | GLOB_NOSORT) as $folder) 
+								{
+					             	// Check in exludes
+					             	if (count($exclude_folders) > 0)
+					             	{
+					             		$folder = str_replace(DIRSEP.DIRSEP, DIRSEP, $folder);
+					             		
+					             		$flag_exclude = false;
+					             		foreach ($exclude_folders as $excl_folder)
+					             		{
+					             			if ( strpos($folder.DIRSEP, $excl_folder ) !== false)
+					             			{
+					             				// This folder must be excluded
+					             				$flag_exclude = true;
+					             				break;
+					             			}
+					             		}
+					             		if ($flag_exclude === false) 
+										{
+											$directories[] = $folder . DIRSEP . '*';
+											if (self::$debug && DEBUG_FILELIST) DebugLog('+++ '.$folder . DIRSEP);
+										}
+										//else if (SGAntiVirus_module::$debug && SGAntiVirus_module::$debug_filelist) SGAntiVirus_module::DebugLog('--- '.$folder . DIRSEP);
+					             	}
+									else { 
+										$directories[] = $folder . DIRSEP . '*'; 
+										//if (SGAntiVirus_module::$debug) SGAntiVirus_module::DebugLog('+++ '.$folder . DIRSEP);
+									}
+									
+						            glob_recursive("{$folder}/*", $exclude_folders, $directories);
+						        }
+						    }
+					
+							$directory = SCAN_PATH;
+						    glob_recursive($directory, $exclude_folders, $directories);
+						    foreach($directories as $directory) 
+							{
+					            foreach(glob("{$directory}/.*") as $file) 
+								{
+					            	$tmp_basename = basename($file);
+					            	if ($tmp_basename != '.' && $tmp_basename != '..')
+					            	{
+					            		$file = str_replace(SCAN_PATH, "", $file);
+					            		if ($file[0] == DIRSEP) $file[0] = " ";
+					            		$file = trim($file);
+					            		
+										if (DEBUG_FILELIST)
+										{
+											fwrite($fp, trim($file)."\n");
+										}
+										else $files_list[] = $file;
+					            	}
+					            }
+						    }
+					
+							if (DEBUG_FILELIST)
+							{
+								fclose($fp);
+							}
+						    
+							$error_msg = 'Save collected file list';
+							if (self::$debug) self::DebugLog($error_msg);
+							
+							$collected_filelist = dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'filelist.txt';
+							if (!DEBUG_FILELIST)
+							{
+								$fp = fopen($collected_filelist, 'w');
+								$status = fwrite($fp, implode("\n", $files_list));
+								fclose($fp);
+								if ($status === false)
+								{
+									$error_msg = 'Cant save information about the collected file '.$collected_filelist;
+									if (self::$debug) self::DebugLog($error_msg);
+									//echo $error_msg;
+									//exit;
+									
+									// Turn ZIP mode
+									$ssh_flag = false;
+								}
+								
+								$error_msg = 'Total files: '.count($files_list);
+								if (self::$debug) self::DebugLog($error_msg);
+							}
+		}
+		
+
+
+
+
+
+
 
 	
 		if ($ssh_flag)
@@ -380,62 +494,95 @@ class SGAntiVirus_module
 			}
 		}
 		
-		if (!$ssh_flag) 
-		{
-			$error_msg = 'ZipArchive method - started';
-			if (self::$debug) self::DebugLog($error_msg);
-			
-			// PHP way
-		    if (class_exists('ZipArchive'))
-		    {
-		    	$file_zip = dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'pack.zip';
-		    	if (file_exists($file_zip)) unlink($file_zip);
-		    	$pack_dir = $scan_path;
-		    	
-		        // open archive
-		        $zip = new ZipArchive;
-		        if ($zip->open($file_zip, ZIPARCHIVE::CREATE | ZIPARCHIVE::OVERWRITE) === TRUE) 
-		        {
-		            foreach ($files_list as $file_name) 
-		            {
-		            	$file_name = SCAN_PATH.DIRSEP.$file_name;
-		                if( strstr(realpath($file_name), "stark") == FALSE) 
-						{
-							$short_key = str_replace($scan_path, "", $file_name);
-		                	$s = $zip->addFile(realpath($file_name), $short_key);
-			                if (!$s) 
-			                {
-			                	$error_msg = 'Couldnt add file: '.$file_name; 
-			                	if (self::$debug) self::DebugLog($error_msg);
-			                }
-		            	}
-						
-					}
-		            // close and save archive
-		            $zip->close();
-		            
-		            //$result['msg'][] = 'Archive created successfully'; 
-		        }
-		        else {
-		        	$error_msg = 'Error: Couldnt open ZIP archive.';
-		        	echo $error_msg;
-		            self::UpdateProgressValue($current_task, $total_tasks, $error_msg);
-					if (self::$debug) self::DebugLog($error_msg);
-					exit;
-		        }
-		
-		    }
-		    else {
-		    	$error_msg =  'Error: ZipArchive class is not exist.';
-		    	echo $error_msg;
-		        self::UpdateProgressValue($current_task, $total_tasks, $error_msg);
-		        if (self::$debug) self::DebugLog($error_msg);
-		        exit;
-		    }
-		    
-			$error_msg = 'ZipArchive method - finished';
-			if (self::$debug) self::DebugLog($error_msg);
-		}
+        
+        
+    	if (!$ssh_flag) 
+    	{
+    		// PHP way
+    			$error_msg = 'Start - Pack with ZipArchive';
+    			if (self::$debug) self::DebugLog($error_msg);
+    		
+    	    	$file_zip = dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'pack.zip';
+    	    	if (file_exists($file_zip)) unlink($file_zip);
+    	    	$pack_dir = $scan_path;
+                
+                	
+    	    if (class_exists('ZipArchive'))
+    	    {
+    	        // open archive
+    	        $zip = new ZipArchive;
+    	        if ($zip->open($file_zip, ZIPARCHIVE::CREATE | ZIPARCHIVE::OVERWRITE) === TRUE) 
+    	        {
+    	            foreach ($files_list as $file_name) 
+    	            {
+    	            	$file_name = SCAN_PATH.DIRSEP.$file_name;
+    	                if( strstr(realpath($file_name), "stark") == FALSE) 
+    					{
+    						$short_key = str_replace($scan_path, "", $file_name);
+    	                	$s = $zip->addFile(realpath($file_name), $short_key);
+    		                if (!$s) 
+    		                {
+    		                	$error_msg = 'Couldnt add file: '.$file_name; 
+    		                	if (self::$debug) self::DebugLog($error_msg);
+    		                }
+    	            	}
+    					
+    				}
+    	             // close and save archive
+    	            $zip->close();
+    	            
+    	            //$result['msg'][] = 'Archive created successfully'; 
+    	        }
+    	        else {
+    	        	$error_msg = 'Error: Couldnt open ZIP archive.';
+    	        	echo $error_msg;
+    	            UpdateProgressValue($current_task, $total_tasks, $error_msg);
+    				if (self::$debug) self::DebugLog($error_msg);
+    				exit;
+    	        }
+    	
+    	    }
+    	    else {
+    	    	$error_msg =  'Error: ZipArchive class is not exist.';
+    	    	//echo $error_msg;
+    	        //UpdateProgressValue($current_task, $total_tasks, $error_msg);
+    	        if (self::$debug) self::DebugLog($error_msg);
+    	        //exit;
+    	    }
+    	    
+    		$error_msg = 'ZipArchive method - finished';
+    		if (self::$debug) self::DebugLog($error_msg);
+    		
+    		// Check if zip file exists
+    		if (!file_exists($file_zip))
+    		{
+    			$error_msg = 'Error: zip file is not exists. Use OwnZipClass';
+    			if (self::$debug) self::DebugLog($error_msg);
+    			
+    			$error_msg = 'OwnZipClass method - started';
+    			if (self::$debug) self::DebugLog($error_msg);
+    			
+    				$zip = new Zip();
+    				$zip->setZipFile($file_zip);
+    	            foreach ($files_list as $file_name_short) 
+    	            {
+    	            	$file_name = trim(SCAN_PATH.DIRSEP.$file_name_short);
+    	            	$handle = fopen($file_name, "r");
+    	            	if (filesize($file_name) > 0) $zip->addFile(fread($handle, filesize($file_name)), $file_name_short, filectime($file_name), NULL, TRUE, Zip::getFileExtAttr($file_name));
+    	            	fclose($handle);
+    	           	}
+    	           	$zip->finalize();
+               	
+    			$error_msg = 'OwnZipClass method - finished';
+    			if (self::$debug) self::DebugLog($error_msg);
+    		}
+    		
+    	}
+        
+        
+        
+        
+
 		// Update progress
 		$current_task += 1;
 		self::UpdateProgressValue($current_task, $total_tasks, 'Collecting information about the files.');
@@ -453,6 +600,8 @@ class SGAntiVirus_module
 			$archive_format = 'zip';
 		}
 	 	
+
+		
 	 	
 	 	// Check if pack file is exist
 		if (file_exists($archive_filename) === false) 
@@ -464,6 +613,9 @@ class SGAntiVirus_module
 		}
 		
 		
+
+		
+		
 		$error_msg = 'Start - Send Packed files to SG server';
 		if (self::$debug) self::DebugLog($error_msg);
 		
@@ -472,35 +624,78 @@ class SGAntiVirus_module
 		if (self::$debug) self::DebugLog($error_msg);
 		
 		if ($tar_size < 32 * 1024 * 1024 || $membership == 'pro')
-		{
-			// Send file
-			$post_data = base64_encode(json_encode(array(
-					'domain' => $domain,
-					'access_key' => $access_key,
-					'email' => $email,
-					'session_report_key' => $session_report_key,
-					'do_evristic' => $do_evristic,
-					'archive_format' => $archive_format))
-			);
-
-			$file_url = str_replace(SCAN_PATH, "/", $archive_filename);
-			$error_msg = 'Web pack url: '.$file_url;
-			if (self::$debug) self::DebugLog($error_msg);
-			
-			$result = self::UploadSingleFile($archive_filename, 'uploadfiles_ver2', $post_data, $file_url);
-			if ($result === false)
-			{
-				$error_msg = 'Can not upload pack file for analyze';
-				if (self::$debug) self::DebugLog($error_msg);
-				echo $error_msg;
-				exit;
-			}
-			else {
-				$error_msg = 'Pack file sent for analyze - OK';
-				if (self::$debug) self::DebugLog($error_msg);
-			}
-			
-		}
+    	{
+    		// Send file
+    		$post_data = base64_encode(json_encode(array(
+    				'domain' => $domain,
+    				'access_key' => $access_key,
+    				'email' => $email,
+    				'session_report_key' => $session_report_key,
+    				'do_evristic' => $do_evristic,
+    				'archive_format' => $archive_format))
+    		);
+    
+    		$flag_CallBack = false;
+    		if (CALLBACK_PACK_FILE)
+    		{	// Callback option
+    			$flag_CallBack = true;
+    		}
+    		else {
+    			$result = self::UploadSingleFile($archive_filename, 'uploadfiles_ver2', $post_data);
+    			if ($result === false)
+    			{
+    				$error_msg = 'Can not upload pack file for analyze';
+    				if (self::$debug) self::DebugLog($error_msg);
+    				
+    				$flag_CallBack = true;
+    			}
+    			else {
+    				$error_msg = 'Pack file sent for analyze - OK';
+    				if (self::$debug) self::DebugLog($error_msg);
+    				
+    				$flag_CallBack = false;
+    			}
+    		}
+    		
+    		
+    		// CallBack method
+    		if ($flag_CallBack)
+    		{
+    			$error_msg = 'Start to use CallBack method';
+    			if (self::$debug) self::DebugLog($error_msg);
+    			
+    			$archive_file_url = '/wp-content/plugins/wp-antivirus-site-protection/tmp/pack.'.$archive_format;
+    			$post_data = base64_encode(json_encode(array(
+    					'domain' => $domain,
+    					'access_key' => $access_key,
+    					'email' => $email,
+    					'session_report_key' => $session_report_key,
+    					'do_evristic' => $do_evristic,
+    					'archive_format' => $archive_format,
+    					'archive_file_url' => $archive_file_url))
+    			);
+    			
+    			$result = self::UploadSingleFile_Callback($post_data);
+    			
+    			if ($result === false)
+    			{
+    				$error_msg = 'CallBack method - failed';
+    				if (self::$debug) self::DebugLog($error_msg);
+    				
+    				$error_msg = 'Can not upload pack file for analyze';
+    				if (self::$debug) self::DebugLog($error_msg);
+    				echo $error_msg;
+    				exit;
+    			}
+    			else {
+    				$error_msg = 'CallBack method - OK';
+    				if (self::$debug) self::DebugLog($error_msg);
+    			}
+    			
+    		}
+    
+    		
+    	}
 		else {
 			$error_msg = 'Pack file is too big ('.$error_msg.'), please contact SiteGuarding.com support or upgrade to PRO version.';
 			if (self::$debug) self::DebugLog($error_msg);
@@ -683,54 +878,90 @@ class SGAntiVirus_module
 	}
 
 
-	public static function UploadSingleFile($file, $action, $post_data, $file_url)
-	{
-		/*ini_set('file_uploads', '1');
-		ini_set('post_max_size', '256M');
-		ini_set('upload_max_filesize', '256M');*/
 
-		$target_url = self::$SITEGUARDING_SERVER.'?action='.$action;
-		$file_name_with_full_path = $file;
-		$post = array(
-			'data' => $post_data,
-			'file_url' => $file_url,
-			'file_contents'=>'@'.realpath($file_name_with_full_path)
-		);
 
-		/*$error_msg = 'post_data: '.$post_data;
-		if (self::$debug) self::DebugLog($error_msg);*/
-		
-		$error_msg = 'CURL CURLOPT_INFILE: '.$file_name_with_full_path;
-		if (self::$debug) self::DebugLog($error_msg);
-		$error_msg = 'CURL CURLOPT_INFILESIZE: '.filesize($file_name_with_full_path);
-		if (self::$debug) self::DebugLog($error_msg);
 
-	 	$ch = curl_init();
-		curl_setopt($ch, CURLOPT_URL,$target_url);
-		curl_setopt($ch, CURLOPT_POST,1);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, $post);
-		/*curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);*/
-		curl_setopt($ch, CURLOPT_INFILE, $file_name_with_full_path);
-		curl_setopt($ch, CURLOPT_INFILESIZE, filesize($file_name_with_full_path));
-		/*curl_setopt($ch, CURLOPT_UPLOAD, 1);*/
-		$result=curl_exec ($ch);
+    function UploadSingleFile($file, $action, $post_data)
+    {
+    	$target_url = self::$SITEGUARDING_SERVER.'?action='.$action;
+    	$file_name_with_full_path = $file;
+    	$post = array(
+    		'data' => $post_data,
+    		'file_contents'=>'@'.$file_name_with_full_path
+    	);
+    	
+    		$error_msg = 'CURL CURLOPT_INFILE: '.$file_name_with_full_path;
+    		if (self::$debug) self::DebugLog($error_msg);
+    		$error_msg = 'CURL CURLOPT_INFILESIZE: '.filesize($file_name_with_full_path);
+    		if (self::$debug) self::DebugLog($error_msg);
+    		
+    
+     	$ch = curl_init();
+    	curl_setopt($ch, CURLOPT_URL,$target_url);
+    	curl_setopt($ch, CURLOPT_POST,1);
+    	curl_setopt($ch, CURLOPT_POSTFIELDS, $post);
+    	curl_setopt($ch, CURLOPT_INFILE, $file_name_with_full_path);
+    	curl_setopt($ch, CURLOPT_INFILESIZE, filesize($file_name_with_full_path));
+    	$result=curl_exec ($ch);
+    	
+    		$info = curl_getinfo($ch);
+    		$error_msg = 'CURL info - '.print_r($info, true);
+    		if (self::$debug) self::DebugLog($error_msg);
+    		
+    	$curl_error = curl_error($ch);
+    	curl_close ($ch);
+    	
+    	if ($info['size_upload'] < 10000/*filesize($file_name_with_full_path)*/)
+    	{
+    		$error_msg = 'CURL uploaded file wrong size: '.$info['size_upload'];
+    		if (self::$debug) self::DebugLog($error_msg);
+    		
+    		return false;
+    	}
+    
+    	if (!$result) 
+    	{
+    		$error_msg = 'CURL upload is failed - '.$curl_error;
+    		if (self::$debug) self::DebugLog($error_msg);
+    		
+    		return false;
+    	}
+    	else return true;
+    }
+    
+    
+    function UploadSingleFile_Callback($post_data)
+    {
+    	$link = self::$SITEGUARDING_SERVER.'?action=uploadfiles_callback';
+    	
+    	$postdata = http_build_query(
+    	    array(
+    	        'data' => $post_data
+    	    )
+    	);
+    	
+    	$opts = array('http' =>
+    	    array(
+    	        'method'  => 'POST',
+    	        'header'  => 'Content-type: application/x-www-form-urlencoded',
+    	        'content' => $postdata
+    	    )
+    	);
+    	
+    	$context  = stream_context_create($opts);
+    	
+    	$result = file_get_contents($link, false, $context);
+    	
+    	$result = json_decode(trim($result), true);
+    	
+    	if (self::$debug) self::DebugLog(print_r($result, true));
+    	
+    	if ($result['status'] == 'ok') return true;
+    	else return false;
+    }
 
-		$info = curl_getinfo($ch);
-		$error_msg = 'CURL info - '.print_r($info, true);
-		if (self::$debug) self::DebugLog($error_msg);
 
-		$curl_error = curl_error($ch);
-		curl_close ($ch);
-	
-		if (!$result) 
-		{
-			$error_msg = 'CURL upload is failed - '.$curl_error;
-			if (self::$debug) self::DebugLog($error_msg);
-			
-			return false;
-		}
-		else return true;
-	}
+
 
 
 
@@ -923,5 +1154,7 @@ VduzlAsH32yA6YQQb1TV8b3h6kt8Wnv/D00Xse1vsEHR/uwVtBQKYguJoEnw9QtwwaaBuWbb91RHz2IE
 	}
 	
 }
+
+
 
 ?>

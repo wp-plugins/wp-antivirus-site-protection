@@ -3,7 +3,7 @@
 Plugin Name: WP Antivirus Site Protection (by SiteGuarding.com)
 Plugin URI: http://www.siteguarding.com/en/website-extensions
 Description: Adds more security for your WordPress website. Server-side scanning. Performs deep website scans of all the files. Virus and Malware detection.
-Version: 4.8.2
+Version: 5.0
 Author: SiteGuarding.com (SafetyBis Ltd.)
 Author URI: http://www.siteguarding.com
 License: GPLv2
@@ -13,8 +13,9 @@ define( 'SITEGUARDING_SERVER', 'http://www.siteguarding.com/ext/antivirus/index.
 define( 'SITEGUARDING_SERVER_IP1', '185.72.156.128');
 define( 'SITEGUARDING_SERVER_IP2', '185.72.156.129');
 
-if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') define(DIRSEP, '\\');
-else define(DIRSEP, '/');
+
+if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') define('DIRSEP', '\\');
+else define('DIRSEP', '/');
 
 //error_reporting(E_ERROR | E_WARNING);
 //error_reporting(E_ERROR);
@@ -443,7 +444,7 @@ if( is_admin() ) {
 		else $avp_alert_txt = '';
 		
 		
-		if ($avp_alert_main > 0 || $avp_alert_heuristic > 0)
+		if ($avp_alert_main > 0 || $avp_alert_heuristic > 0 || $avp_license_info['blacklist']['google'] != 'ok')
 		{
 			$avp_eachpage_alert_txt = '<b>Antivirus Important Notice:</b>';
 			if ($avp_alert_main > 0)
@@ -453,6 +454,10 @@ if( is_admin() ) {
 			if ($avp_alert_heuristic > 0)
 			{
 				$avp_eachpage_alert_txt .= ' Unsafe code detected: '.$avp_alert_heuristic.' file(s).'; 
+			}
+ 			if ($avp_license_info['blacklist']['google'] != 'ok')
+			{
+				$avp_eachpage_alert_txt .= ' Blacklisted, Reason ['.$avp_license_info['blacklist']['google'].']'; 
 			}
 		} 
 		else if ($avp_license_info['membership'] != 'pro' && $avp_license_info['membership'] != 'trial') $avp_eachpage_alert_txt .= '<b>Antivirus Important Notice:</b> Your license is expired and antivirus has limits. Some features are disabled.';
@@ -780,7 +785,7 @@ if( is_admin() ) {
 					if ($params['membership'] == 'pro') 
 					{
 						?>
-						<input type="submit" name="submit" id="submit" class="button button-primary" value="Quarantine & Remove malware">
+						<input type="submit" name="submit" id="submit" class="button button-primary" value="Quarantine & Remove malware" onclick="return confirm('Before use this feature, please make sure that you have sent the files for analyze and got reply from SiteGuarding.com\nMove files to quarantine?')">
 						<?php
 					} else {
 						?>
@@ -872,7 +877,7 @@ if( is_admin() ) {
 					if ($params['membership'] == 'pro') 
 					{
 						?>
-						<input type="submit" name="submit" id="submit" class="button button-primary" value="Quarantine & Remove malware">
+						<input type="submit" name="submit" id="submit" class="button button-primary" value="Quarantine & Remove malware" onclick="return confirm('Before use this feature, please make sure that you have sent the files for analyze and got reply from SiteGuarding.com\nMove files to quarantine?')">
 						<?php
 					} else {
 						?>
@@ -1558,7 +1563,8 @@ Available Scans: <?php echo $params['scans']; ?><br />
 Valid till: <?php echo $params['exp_date']."&nbsp;&nbsp;"; 
 if ($params['exp_date'] < date("Y-m-d")) echo '<span class="msg_box msg_error">Expired</span>';
 if ($params['exp_date'] < date("Y-m-d", mktime(0, 0, 0, date("m")  , date("d")-7, date("Y"))) && $params['exp_date'] >= date("Y-m-d") ) echo '<span class="msg_box msg_warning">Will Expired Soon</span>';
-?>
+?><br />
+Google Blacklist Status: <?php if ($params['blacklist']['google'] != 'ok') echo '<span class="msg_error">Blacklisted ['.$params['blacklist']['google'].']</span>'; else echo 'Not blacklisted'; ?>
 </p>
 
 <?php
@@ -1667,7 +1673,7 @@ if (count($reports)) {
 		if ($params['membership'] == 'pro') 
 		{
 			?>
-			<input type="submit" name="submit" id="submit" class="button button-primary" value="Quarantine & Remove malware">
+			<input type="submit" name="submit" id="submit" class="button button-primary" value="Quarantine & Remove malware" onclick="return confirm('Before use this feature, please make sure that you have sent the files for analyze and got reply from SiteGuarding.com\nMove files to quarantine?')">
 			<?php
 		} else {
 			?>
@@ -1771,7 +1777,7 @@ if ( ($params['last_scan_files_counters']['main'] > 0 || $params['last_scan_file
 					if ($params['membership'] == 'pro') 
 					{
 						?>
-						<input type="submit" name="submit" id="submit" class="button button-primary" value="Quarantine & Remove malware">
+						<input type="submit" name="submit" id="submit" class="button button-primary" value="Quarantine & Remove malware" onclick="return confirm('Before use this feature, please make sure that you have sent the files for analyze and got reply from SiteGuarding.com\nMove files to quarantine?')">
 						<?php
 					} else {
 						?>
@@ -1863,7 +1869,7 @@ if ( ($params['last_scan_files_counters']['main'] > 0 || $params['last_scan_file
 					if ($params['membership'] == 'pro') 
 					{
 						?>
-						<input type="submit" name="submit" id="submit" class="button button-primary" value="Quarantine & Remove malware">
+						<input type="submit" name="submit" id="submit" class="button button-primary" value="Quarantine & Remove malware" onclick="return confirm('Before use this feature, please make sure that you have sent the files for analyze and got reply from SiteGuarding.com\nMove files to quarantine?')">
 						<?php
 					} else {
 						?>
