@@ -4,7 +4,7 @@ include_once('zip.class.php');
 
 class SGAntiVirus_module
 {
-	public static  $antivirus_version = '5.0.1';
+	public static  $antivirus_version = '5.0.2';
 	public static  $antivirus_platform = 'wordpress';
 	
 	public static  $debug = true;
@@ -29,7 +29,7 @@ class SGAntiVirus_module
 	
 	public static function AntivirusFileLock()
 	{
-		$lockFile = dirname(__FILE__).'/tmp/scan.lock';
+		$lockFile = dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'scan.lock';
 		
 		$lockFp = fopen($lockFile, 'w');
 		
