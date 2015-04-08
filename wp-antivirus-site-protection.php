@@ -3,7 +3,7 @@
 Plugin Name: WP Antivirus Site Protection (by SiteGuarding.com)
 Plugin URI: http://www.siteguarding.com/en/website-extensions
 Description: Adds more security for your WordPress website. Server-side scanning. Performs deep website scans of all the files. Virus and Malware detection.
-Version: 5.0.1
+Version: 5.0.2
 Author: SiteGuarding.com (SafetyBis Ltd.)
 Author URI: http://www.siteguarding.com
 License: GPLv2
@@ -413,6 +413,9 @@ if( is_admin() ) {
 	{
 		$avp_license_info = SGAntiVirus::GetLicenseInfo(get_site_url(), $avp_params['access_key']);
 		
+        /**
+        * Global Alerts
+        */
 		// Save membership type
 		$data = array('membership' => $avp_license_info['membership']);
 		plgwpavp_SetExtraParams($data);
@@ -464,9 +467,39 @@ if( is_admin() ) {
 			else  $avp_eachpage_alert_txt = '';
 		
 		if ($avp_license_info['membership'] != 'pro' && $avp_license_info['membership'] != 'trial') $avp_eachpage_alert_txt .= '';
+        
+        /**
+         * Global Updates and Restoring
+         */ 
+        if ($avp_params['last_core_update'] < date("Y-m-d"))  
+        {
+    		$data = array('last_core_update' => date("Y-m-d"));
+    		plgwpavp_SetExtraParams($data);
+            
+			$result = SGAntiVirus::DownloadFromWordpress_Link($avp_license_info['update_url']);
+			if ($result === true && class_exists('ZipArchive')) 
+		    {
+        		if (!defined('ABSPATH') || strlen(ABSPATH) < 8) 
+        		{
+        			$site_path = dirname(__FILE__);
+        			$site_path = str_replace(DIRSEP.'wp-content'.DIRSEP.'plugins'.DIRSEP.'wp-antivirus-site-protection', DIRSEP, $site_path);
+        		}
+                else $site_path = ABSPATH;
+                
+		    	$zip = new ZipArchive;
+				if ($zip->open(dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'update.zip') === TRUE) 
+                {
+					$extract_path = $site_path.'wp-content'.DIRSEP.'plugins'.DIRSEP;
+
+				    $unzip_status = $zip->extractTo($extract_path);
+
+				    $zip->close();
+				    
+				} 
+	    	}
+        }      
 	}
-	
-	
+
 
 	add_action('admin_menu', 'register_plgavp_settings_page');
 
@@ -1269,6 +1302,30 @@ function plgwpavp_SetExtraParams($data = array())
 
 class SGAntiVirus {
 	
+	public static function DownloadFromWordpress_Link($link)
+	{
+		$dst = fopen(dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'update.zip', 'w');
+		$ch = curl_init();
+		 curl_setopt($ch, CURLOPT_URL, $link );
+		 curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/4.0 (compatible; MSIE 5.01; Windows NT 5.0)");
+		 //curl_setopt($ch, CURLOPT_HEADER, true);
+		 curl_setopt($ch, CURLOPT_TIMEOUT, 3600);
+		 curl_setopt($ch, CURLOPT_TIMEOUT_MS, 3600000);
+		 curl_setopt($ch, CURLOPT_FILE, $dst);
+		 //!dont need curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+         //curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($ch, CURLOPT_FAILONERROR, true);
+		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10); // 10 sec
+		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT_MS, 10000); // 10 sec
+		curl_setopt($ch, CURLOPT_BINARYTRANSFER, 1);
+		//*** maybe need */curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+
+		 $a = curl_exec($ch);
+		 curl_close($ch);
+         if ($a === false) return false;
+         else return true;
+	}
+    
 	public static function DownloadFromWordpress($version)
 	{
 		$dst = fopen(dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'update.zip', 'w');
@@ -1985,14 +2042,16 @@ if ($params['membership'] != 'pro') {
 					},
 					function(data){
 						
-						if (data=='') 
+                       if (data!='') ShowReportText(data);
+						
+						/*if (data=='') 
 						{
 							alert('Your server lost connection. You will be redirected to SiteGuarding.com to view your report.');
 							document.location.href = 'https://www.siteguarding.com/antivirus/viewreport?report_id=<?php echo $session_report_key; ?>';
 							return;
 						}
 						
-						ShowReportText(data);
+						ShowReportText(data);*/
 					}
 				);
 				
@@ -2093,7 +2152,8 @@ if ($params['membership'] != 'pro') {
 		
 	    $data = array(
 			'domain' => $domain,
-			'access_key' => $access_key
+			'access_key' => $access_key,
+            'product_type' => 'wp'
 		);
 	    $link .= base64_encode(json_encode($data));
 	    //$msg = file_get_contents($link);
