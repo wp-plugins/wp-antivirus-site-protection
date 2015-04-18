@@ -4,7 +4,7 @@ include_once('zip.class.php');
 
 class SGAntiVirus_module
 {
-	public static  $antivirus_version = '5.0.2';
+	public static  $antivirus_version = '5.0.3';
 	public static  $antivirus_platform = 'wordpress';
 	
 	public static  $debug = true;
@@ -19,6 +19,7 @@ class SGAntiVirus_module
 
 	public static function AntivirusFinished()
 	{
+        if (self::$debug) self::DebugLog(print_r(error_get_last(), true));
 		if (self::$debug) self::DebugLog('PHP process has been terminated');
 		
 		$fp = fopen(dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'flag_terminated.tmp', 'w');
@@ -205,82 +206,94 @@ class SGAntiVirus_module
 		if (self::$debug) self::DebugLog($error_msg);
 		
 		$error_msg = print_r($exclude_folders, true);
-		if (self::$debug && count($exclude_folders) > 0) DebugLog($error_msg);
+		if (self::$debug && count($exclude_folders) > 0) self::DebugLog($error_msg);
 		
 		
+        $files_list = array();
+        
+        // Check PHP version
+        $php_version = explode('.', PHP_VERSION);
+        $php_version = floatval($php_version[0].'.'.$php_version[1]);
 		
-		$filter = function ($file, $key, $iterator) use ($exclude_folders) 
-		{
-		    if ($iterator->hasChildren() && !in_array($file->getPathname().DIRSEP, $exclude_folders)) 
-			{
-		        return true;
-		    }
-		    return $file->isFile();
-		};
-			
-		$Directory = new RecursiveDirectoryIterator($scan_path);
-		if (count($exclude_folders)) $Iterator = new RecursiveIteratorIterator(new RecursiveCallbackFilterIterator($Directory, $filter));
-		else $Iterator = new RecursiveIteratorIterator($Directory);
-		$include_extensions = array(
-			'inc',
-			'php',
-			'php4',
-			'php5',
-			'phtml',
-			'js',
-			'html',
-			'htm',
-			'cgi',
-			'pl',
-			'so',
-			'sh',
-			'htaccess'
-		);
-
-		$Regex = new RegexIterator($Iterator, '/^.+\.(?:'.implode("|", $include_extensions).')$/i', RecursiveRegexIterator::GET_MATCH);
-		$files_list = array();
-		
-
-		try {
-			foreach ($Regex as $k => $v) 
-			{
-				$item = str_replace($scan_path, "", $k);
-				if ($item[0] == "\\" || $item[0] == "/") $item[0] = "";
-				$item = trim($item);
-				$files_list[] = $item;
-				//echo $key."<br>";
-			}
-			
-			$error_msg = 'Save collected file list';
-			if (self::$debug) self::DebugLog($error_msg);
-	
-			$collected_filelist = dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'filelist.txt';
-			if (!DEBUG_FILELIST)
-			{
-				$fp = fopen($collected_filelist, 'w');
-				$status = fwrite($fp, implode("\n", $files_list));
-				fclose($fp);
-				if ($status === false)
-				{
-					$error_msg = 'Cant save information about the collected file '.$collected_filelist;
-					if (self::$debug) self::DebugLog($error_msg);
-					//echo $error_msg;
-					//exit;
-					
-					// Turn ZIP mode
-					$ssh_flag = false;
-				}
-				
-				$error_msg = 'Total files: '.count($files_list);
-				if (self::$debug) self::DebugLog($error_msg);
-			}
-			
-		} catch (Exception $e) {
-			$error_msg = 'Caught exception: '. $e->getMessage();
-			if (self::$debug) self::DebugLog($error_msg);
-			
-			$files_list = array();	// Prepare for new file scan
-		}
+        if ($php_version >= 5.3)
+        {
+    		$eval_code = '$filter = function ($file, $key, $iterator) use ($exclude_folders) 
+    		{
+    		    if ($iterator->hasChildren() && !in_array($file->getPathname().DIRSEP, $exclude_folders)) 
+    			{
+    		        return true;
+    		    }
+    		    return $file->isFile();
+    		};';
+            eval($eval_code);
+    			
+    		$Directory = new RecursiveDirectoryIterator($scan_path);
+    		if (count($exclude_folders)) $Iterator = new RecursiveIteratorIterator(new RecursiveCallbackFilterIterator($Directory, $filter));
+    		else $Iterator = new RecursiveIteratorIterator($Directory);
+    		$include_extensions = array(
+    			'inc',
+    			'php',
+    			'php4',
+    			'php5',
+    			'phtml',
+    			'js',
+    			'html',
+    			'htm',
+    			'cgi',
+    			'pl',
+    			'so',
+    			'sh',
+    			'htaccess'
+    		);
+    
+    		$Regex = new RegexIterator($Iterator, '/^.+\.(?:'.implode("|", $include_extensions).')$/i', RecursiveRegexIterator::GET_MATCH);
+    		
+    		
+    
+    		try {
+    			foreach ($Regex as $k => $v) 
+    			{
+    				$item = str_replace($scan_path, "", $k);
+    				if ($item[0] == "\\" || $item[0] == "/") $item[0] = "";
+    				$item = trim($item);
+    				$files_list[] = $item;
+    				//echo $key."<br>";
+    			}
+    			
+    			$error_msg = 'Save collected file list';
+    			if (self::$debug) self::DebugLog($error_msg);
+    	
+    			$collected_filelist = dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'filelist.txt';
+    			if (!DEBUG_FILELIST)
+    			{
+    				$fp = fopen($collected_filelist, 'w');
+    				$status = fwrite($fp, implode("\n", $files_list));
+    				fclose($fp);
+    				if ($status === false)
+    				{
+    					$error_msg = 'Cant save information about the collected file '.$collected_filelist;
+    					if (self::$debug) self::DebugLog($error_msg);
+    					//echo $error_msg;
+    					//exit;
+    					
+    					// Turn ZIP mode
+    					$ssh_flag = false;
+    				}
+    				
+    				$error_msg = 'Total files: '.count($files_list);
+    				if (self::$debug) self::DebugLog($error_msg);
+    			}
+    			
+    		} catch (Exception $e) {
+    			$error_msg = 'Caught exception: '. $e->getMessage();
+    			if (self::$debug) self::DebugLog($error_msg);
+    			
+    			$files_list = array();	// Prepare for new file scan
+    		}
+            
+        }
+        
+                
 		
 		if (count($files_list) == 0)
 		{
@@ -1153,6 +1166,37 @@ VduzlAsH32yA6YQQb1TV8b3h6kt8Wnv/D00Xse1vsEHR/uwVtBQKYguJoEnw9QtwwaaBuWbb91RHz2IE
 		fclose($fp);
 	}
 	
+}
+
+
+
+if (!class_exists('RecursiveCallbackFilterIterator'))
+{
+    class RecursiveCallbackFilterIterator extends RecursiveFilterIterator {
+        
+        public function __construct ( RecursiveIterator $iterator, $callback ) {
+            
+            $this->callback = $callback;
+            
+            parent::__construct($iterator);
+            
+        }
+        
+        public function accept () {
+            
+            $callback = $this->callback;
+            
+            return $callback(parent::current(), parent::key(), parent::getInnerIterator());
+            
+        }
+        
+        public function getChildren () {
+            
+               return new self($this->getInnerIterator()->getChildren(), $this->callback);
+            
+        }
+        
+    }
 }
 
 

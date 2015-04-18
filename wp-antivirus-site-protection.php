@@ -3,7 +3,7 @@
 Plugin Name: WP Antivirus Site Protection (by SiteGuarding.com)
 Plugin URI: http://www.siteguarding.com/en/website-extensions
 Description: Adds more security for your WordPress website. Server-side scanning. Performs deep website scans of all the files. Virus and Malware detection.
-Version: 5.0.2
+Version: 5.0.3
 Author: SiteGuarding.com (SafetyBis Ltd.)
 Author URI: http://www.siteguarding.com
 License: GPLv2
@@ -349,13 +349,6 @@ if( is_admin() ) {
 	
 	error_reporting(0);
 	
-/*	function wp_antivirus_admin_menu() 
-	{
-		echo '111111111111';
-		//load_menu();
-	}
-	
-	add_action( 'admin_menu', 'wp_antivirus_admin_menu');*/
 	
 	function plgwpavp_activation()
 	{
@@ -532,6 +525,17 @@ if( is_admin() ) {
 
 	function plgavp_settings_page_callback() 
 	{
+		// PHP version check
+        $php_version = explode('.', PHP_VERSION);
+        $php_version = floatval($php_version[0].'.'.$php_version[1]);
+        
+		/*if ($php_version <= 5.2)
+		{
+			// Error class module is not loaded
+			SGAntiVirus::ShowMessage('Your PHP version is too old ['.PHP_VERSION.']. Please ask your hoster to upgrade PHP.<br><br>This version for PHP 5.3 and older. If you want to use our scanner on your server please download WP Antivirus version 4.8.2. <a href="https://www.siteguarding.com/files/wp-antivirus-site-protection-4.8.2.zip">Click to download</a>');
+			return;
+		}*/
+        
 		// Load class
 		if (!file_exists(dirname(__FILE__).'/sgantivirus.class.php'))
 		{
@@ -1621,7 +1625,13 @@ Valid till: <?php echo $params['exp_date']."&nbsp;&nbsp;";
 if ($params['exp_date'] < date("Y-m-d")) echo '<span class="msg_box msg_error">Expired</span>';
 if ($params['exp_date'] < date("Y-m-d", mktime(0, 0, 0, date("m")  , date("d")-7, date("Y"))) && $params['exp_date'] >= date("Y-m-d") ) echo '<span class="msg_box msg_warning">Will Expired Soon</span>';
 ?><br />
-Google Blacklist Status: <?php if ($params['blacklist']['google'] != 'ok') echo '<span class="msg_error">Blacklisted ['.$params['blacklist']['google'].']</span>'; else echo 'Not blacklisted'; ?>
+Google Blacklist Status: <?php if ($params['blacklist']['google'] != 'ok') echo '<span class="msg_error">Blacklisted ['.$params['blacklist']['google'].']</span> [<a href="https://www.siteguarding.com/en/services/malware-removal-service" target="_blank">Remove From Blacklist</a>]'; else echo 'Not blacklisted'; ?><br />
+File Change Monitoring: <?php if ($params['filemonitoring']['status'] == 0) echo '<span class="msg_error">Disabled</span> [<a href="https://www.siteguarding.com/en/protect-your-website" target="_blank">Subscribe</a>]'; else echo '<b>'.$params['filemonitoring']['plan'].'</b> ['.$params['filemonitoring']['exp_date'].']'; ?><br />
+<?php
+if ($params['last_scan_files_counters']['main'] == 0 && $params['last_scan_files_counters']['heuristic'] == 0) echo 'Website Status: <b>Clean</b>';
+if ($params['last_scan_files_counters']['main'] > 0) echo 'Website Status: <span class="msg_error">Infected</span> [<a href="https://www.siteguarding.com/en/services/malware-removal-service" target="_blank">Clean My Website</a>]';
+else if ($params['last_scan_files_counters']['heuristic'] > 0)  echo 'Website Status: <span class="msg_error">Review is required</span> [<a href="https://www.siteguarding.com/en/services/malware-removal-service" target="_blank">Review My Website</a>]';
+?>
 </p>
 
 <?php
