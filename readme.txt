@@ -3,8 +3,8 @@ Contributors: SiteGuarding
 Donate link: https://www.siteguarding.com/en/website-extensions
 Tags: antivirus, Anti Virus, malware, virus, scanner, security, block, backdoor, attack, hack, hacker, hacking, protection, website security, scan, malware removal, virus detection, iframe, malware, protect, base64, google safe browsing, hacking, htaccess, injection, prevent, secure website, security plugin, wordpress security, vulnerability
 Requires at least: 3.0
-Tested up to: 4.1.1
-Stable tag: 5.0.3
+Tested up to: 4.2
+Stable tag: 5.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -13,7 +13,7 @@ Adds more security for your website. Server-side scanning. Performs deep website
 == Description ==
 
 WP Antivirus Site Protection is the security plugin to prevent/detect and remove malicious viruses and suspicious codes. 
-It detects: backdoors, rootkits, trojan horses, worms, fraudtools, adware, spyware and etc.
+It detects: backdoors, rootkits, trojan horses, worms, fraudtools, adware, spyware, hidden links, redirection and etc.
 WP Antivirus Site Protection scans not only theme files, it scans and analyzes all the files of your WordPress website (theme files, all the files of the plugins, files in upload folder and etc).
 
 > This plugin will be especially useful for everybody who downloads WP themes and plugins from torrents and websites with free stuff instead of purchase the original copies from the developers. You will be shocked, how many free gifts they have inside :) 

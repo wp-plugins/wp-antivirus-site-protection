@@ -4,7 +4,7 @@ include_once('zip.class.php');
 
 class SGAntiVirus_module
 {
-	public static  $antivirus_version = '5.0.3';
+	public static  $antivirus_version = '5.1';
 	public static  $antivirus_platform = 'wordpress';
 	
 	public static  $debug = true;
@@ -40,12 +40,30 @@ class SGAntiVirus_module
 	
 	public static function scan($check_session = true, $show_results = true)
 	{
-	    define('DEBUG_FILELIST', false);
-        define('CALLBACK_PACK_FILE', false);
-        
-       
 	    if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') define(DIRSEP, '\\');
 		else define(DIRSEP, '/');
+        
+        
+        // Load extra settings
+		if (file_exists(dirname(__FILE__).DIRSEP.'settings.php'))
+		{
+			$error_msg = 'Extra settings loaded';
+			if (self::$debug) self::DebugLog($error_msg);
+			
+			require_once(dirname(__FILE__).DIRSEP.'settings.php');	
+            
+            if (count($avp_settings))
+            {
+                foreach ($avp_settings as $k => $v)
+                {
+                    $v = trim($v);
+                    if (strtolower($v) == 'false') $v = false;
+                    if (strtolower($v) == 'true') $v = true;
+                    define(strtoupper($k), $v);
+                }
+            }
+		}
+        
         
 		// Skip the 2nd scan process
 		$lockFile = dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'scan.lock';
@@ -635,6 +653,7 @@ class SGAntiVirus_module
 		$tar_size = filesize($archive_filename);
 		$error_msg = 'Pack file is '.round($tar_size/1024/1024, 2).'Mb';
 		if (self::$debug) self::DebugLog($error_msg);
+        $archive_file_url = '/wp-content/plugins/wp-antivirus-site-protection/tmp/pack.'.$archive_format;
 		
 		if ($tar_size < 32 * 1024 * 1024 || $membership == 'pro')
     	{
@@ -645,7 +664,8 @@ class SGAntiVirus_module
     				'email' => $email,
     				'session_report_key' => $session_report_key,
     				'do_evristic' => $do_evristic,
-    				'archive_format' => $archive_format))
+    				'archive_format' => $archive_format,
+    				'archive_file_url' => $archive_file_url))
     		);
     
     		$flag_CallBack = false;
@@ -677,7 +697,7 @@ class SGAntiVirus_module
     			$error_msg = 'Start to use CallBack method';
     			if (self::$debug) self::DebugLog($error_msg);
     			
-    			$archive_file_url = '/wp-content/plugins/wp-antivirus-site-protection/tmp/pack.'.$archive_format;
+    			
     			$post_data = base64_encode(json_encode(array(
     					'domain' => $domain,
     					'access_key' => $access_key,
@@ -976,7 +996,38 @@ class SGAntiVirus_module
 
 
 
+    public static function UpdateSettungsValue($settings_name = '', $settings_value = '')
+    {
+        if ($settings_name == '') return array('error' => 'nothing updated');
+        
+        // Load extra settings
+        $avp_settings = array();
+		if (file_exists(dirname(__FILE__).DIRSEP.'settings.php'))
+		{
+			require_once(dirname(__FILE__).DIRSEP.'settings.php');	
+        }    
+        
+        $avp_settings[$settings_name] = $settings_value;
+        
+        // Save seetings file
+        $fp = fopen(dirname(__FILE__).DIRSEP.'settings.php', 'w');
+        fwrite($fp, '<?php'."\n");
+        fwrite($fp, '$avp_settings = array('."\n");
+        foreach ($avp_settings as $k => $v)
+        {
+            if ($v == 'false' || $v === false) $v = false;
+            if ($v == 'true' || $v === true) $v = true;
+            if ($v !== true && $v !== false) $v = "'".addslashes($v)."'";
+            fwrite($fp, "'".strtoupper($k)."' => ".$v."\n");
+        }
+        fwrite($fp, ');'."\n");
+        fwrite($fp, '?>');
+        fclose($fp);
 
+        return $avp_settings;
+    }
+    
+    
 
 	public static function SendEmail($email, $result, $subject = '')
 	{
