@@ -282,25 +282,24 @@ class SGAntiVirus_module
     			if (self::$debug) self::DebugLog($error_msg);
     	
     			$collected_filelist = dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'filelist.txt';
-    			if (!DEBUG_FILELIST)
-    			{
-    				$fp = fopen($collected_filelist, 'w');
-    				$status = fwrite($fp, implode("\n", $files_list));
-    				fclose($fp);
-    				if ($status === false)
-    				{
-    					$error_msg = 'Cant save information about the collected file '.$collected_filelist;
-    					if (self::$debug) self::DebugLog($error_msg);
-    					//echo $error_msg;
-    					//exit;
-    					
-    					// Turn ZIP mode
-    					$ssh_flag = false;
-    				}
-    				
-    				$error_msg = 'Total files: '.count($files_list);
-    				if (self::$debug) self::DebugLog($error_msg);
-    			}
+    	
+				$fp = fopen($collected_filelist, 'w');
+				$status = fwrite($fp, implode("\n", $files_list));
+				fclose($fp);
+				if ($status === false)
+				{
+					$error_msg = 'Cant save information about the collected file '.$collected_filelist;
+					if (self::$debug) self::DebugLog($error_msg);
+					//echo $error_msg;
+					//exit;
+					
+					// Turn ZIP mode
+					$ssh_flag = false;
+				}
+				
+				$error_msg = 'Total files: '.count($files_list);
+				if (self::$debug) self::DebugLog($error_msg);
+    			
     			
     		} catch (Exception $e) {
     			$error_msg = 'Caught exception: '. $e->getMessage();
@@ -335,12 +334,11 @@ class SGAntiVirus_module
 					
 							$error_msg = 'Excluded Folders: '.count($exclude_folders);
 							if (self::$debug) self::DebugLog($error_msg);
+
 							
-							if (DEBUG_FILELIST)
-							{
-								$collected_filelist = dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'filelist.txt';
-								$fp = fopen($collected_filelist, 'w');
-							}
+							$collected_filelist = dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'filelist.txt';
+							$fp = fopen($collected_filelist, 'w');
+
 					
 							// Collect all files
 							while(count($path) != 0)
@@ -393,11 +391,10 @@ class SGAntiVirus_module
 												$item = str_replace(SCAN_PATH, "", $item);
 												if ($item[0] == "\\" || $item[0] == "/") $item[0] = "";
 												$item = trim($item);
-												if (DEBUG_FILELIST)
-												{
+
 													fwrite($fp, $item."\n");
-												}
-												else $files_list[] = $item;
+
+												$files_list[] = $item;
 												break;
 										}
 									}
@@ -459,43 +456,24 @@ class SGAntiVirus_module
 					            		if ($file[0] == DIRSEP) $file[0] = " ";
 					            		$file = trim($file);
 					            		
-										if (DEBUG_FILELIST)
-										{
 											fwrite($fp, trim($file)."\n");
-										}
-										else $files_list[] = $file;
+										
+                                        $files_list[] = $file;
 					            	}
 					            }
 						    }
 					
-							if (DEBUG_FILELIST)
-							{
+
 								fclose($fp);
-							}
+
 						    
 							$error_msg = 'Save collected file list';
 							if (self::$debug) self::DebugLog($error_msg);
 							
-							$collected_filelist = dirname(__FILE__).DIRSEP.'tmp'.DIRSEP.'filelist.txt';
-							if (!DEBUG_FILELIST)
-							{
-								$fp = fopen($collected_filelist, 'w');
-								$status = fwrite($fp, implode("\n", $files_list));
-								fclose($fp);
-								if ($status === false)
-								{
-									$error_msg = 'Cant save information about the collected file '.$collected_filelist;
-									if (self::$debug) self::DebugLog($error_msg);
-									//echo $error_msg;
-									//exit;
-									
-									// Turn ZIP mode
-									$ssh_flag = false;
-								}
 								
 								$error_msg = 'Total files: '.count($files_list);
 								if (self::$debug) self::DebugLog($error_msg);
-							}
+							
 		}
 		
 
@@ -669,7 +647,7 @@ class SGAntiVirus_module
     		);
     
     		$flag_CallBack = false;
-    		if (CALLBACK_PACK_FILE)
+    		if (CALLBACK_PACK_FILE == 1 || CALLBACK_PACK_FILE === true)
     		{	// Callback option
     			$flag_CallBack = true;
     		}
