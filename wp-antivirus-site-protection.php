@@ -1653,7 +1653,7 @@ if ($params['exp_date'] < date("Y-m-d", mktime(0, 0, 0, date("m")  , date("d")-7
 Google Blacklist Status: <?php if ($params['blacklist']['google'] != 'ok') echo '<span class="msg_error">Blacklisted ['.$params['blacklist']['google'].']</span> [<a href="https://www.siteguarding.com/en/services/malware-removal-service" target="_blank">Remove From Blacklist</a>]'; else echo 'Not blacklisted'; ?><br />
 File Change Monitoring: <?php if ($params['filemonitoring']['status'] == 0) echo '<span class="msg_error">Disabled</span> [<a href="https://www.siteguarding.com/en/protect-your-website" target="_blank">Subscribe</a>]'; else echo '<b>'.$params['filemonitoring']['plan'].'</b> ['.$params['filemonitoring']['exp_date'].']'; ?><br />
 <?php
-if (count($reports) > 0) 
+if (count($params['reports']) > 0) 
 {
     if ($params['last_scan_files_counters']['main'] == 0 && $params['last_scan_files_counters']['heuristic'] == 0) echo 'Website Status: <b>Clean</b>';
     if ($params['last_scan_files_counters']['main'] > 0) echo 'Website Status: <span class="msg_error">Infected</span> [<a href="https://www.siteguarding.com/en/services/malware-removal-service" target="_blank">Clean My Website</a>]';
