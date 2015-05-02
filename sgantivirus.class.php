@@ -1,10 +1,12 @@
 <?php
+// Date 2015-05-02
+// For ver. 5.3
 
 include_once('zip.class.php');
 
 class SGAntiVirus_module
 {
-	public static  $antivirus_version = '5.2';
+	public static  $antivirus_version = '5.3';
 	public static  $antivirus_platform = 'wordpress';
 	public static  $antivirus_cms = 'wordpress';
 	

@@ -1,7 +1,7 @@
 <?php
 class SGAntiVirus_scanner
 {
-    public static  $scanner_version = '1.0'; 
+    public static  $scanner_version = '1.1';
     public static  $debug = true;
     
 	public static  $bool_list = array(0 => 'FALSE', 1 => 'TRUE');
