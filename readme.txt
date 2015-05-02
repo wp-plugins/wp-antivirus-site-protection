@@ -1,10 +1,10 @@
 === Plugin Name ===
 Contributors: SiteGuarding
-Donate link: https://www.siteguarding.com/en/website-extensions
+Donate link: https://www.siteguarding.com/en/buy-service/antivirus-site-protection
 Tags: antivirus, Anti Virus, malware, virus, scanner, security, block, backdoor, attack, hack, hacker, hacking, protection, website security, scan, malware removal, virus detection, iframe, malware, protect, base64, google safe browsing, hacking, htaccess, injection, prevent, secure website, security plugin, wordpress security, vulnerability
 Requires at least: 3.0
 Tested up to: 4.2
-Stable tag: 5.2
+Stable tag: 5.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
