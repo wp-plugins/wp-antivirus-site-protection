@@ -28,10 +28,10 @@ class SGAntiVirus_module
 		else define(DIRSEP, '/');
         
         // Load scanner class
-		if (file_exists('scanner.class.php'))
+		if (file_exists(dirname(__FILE__).DIRSEP.'scanner.class.php'))
 		{
 		  
-			require_once('scanner.class.php');	
+			require_once(dirname(__FILE__).DIRSEP.'scanner.class.php');	
             
     		if (!defined('ABSPATH') || strlen(ABSPATH) < 8) 
     		{
@@ -39,7 +39,7 @@ class SGAntiVirus_module
     			$scan_path = str_replace(DIRSEP.'wp-content'.DIRSEP.'plugins'.DIRSEP.'wp-antivirus-site-protection', DIRSEP, $scan_path);
         		//echo TEST;
     		}
-            
+            else $scan_path = ABSPATH;
             
             
             $scanner = new SGAntiVirus_scanner();
