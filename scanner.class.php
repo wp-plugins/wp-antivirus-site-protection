@@ -147,12 +147,12 @@ class SGAntiVirus_scanner
         unlink($this->tmp_dir.'filelist.txt');
 		
 	
-        if (!class_exists("HTTPClient"))
+        /*if (!class_exists("HTTPClient"))
         {
             include_once($this->work_dir.'HttpClient.class.php');
         }
 		
-		$HTTPClient = new HTTPClient();
+		$HTTPClient = new HTTPClient();*/
 		
 	
 		// Some Init data
@@ -539,14 +539,21 @@ class SGAntiVirus_scanner
 		{
 			sleep(5);
 
-			$post_data = array(
+			/*$post_data = array(
 				'data'=> base64_encode(json_encode(array(
 					'domain' => $domain,
 					'access_key' => $access_key,
 					'session_report_key' => $session_report_key)))
-			);
+			);*/
+            
+    		$post_data = base64_encode(json_encode(array(
+    				'domain' => $domain,
+    				'access_key' => $access_key,
+    				'session_report_key' => $session_report_key)));
 	
-			$result_json = $HTTPClient->post(self::$SITEGUARDING_SERVER.'?action=getreport_ver2', $post_data);
+			//$result_json = $HTTPClient->post(self::$SITEGUARDING_SERVER.'?action=getreport_ver2', $post_data);
+    		$link = self::$SITEGUARDING_SERVER.'?action=getreport_ver2&data='.$post_data;
+    		$result_json = file_get_contents($link);
 			if ($result_json === false) 
 			{
 				$error_msg = 'Report can not be generated. Please try again or contact support';
@@ -557,7 +564,8 @@ class SGAntiVirus_scanner
 			
 			$result_json = (array)json_decode($result_json, true);
 
-			
+			//if (self::$debug) self::DebugLog(print_r($result_json, true));
+            
 			if ($result_json['status'] == 'ready') 
 			{
 				echo $result_json['text'];
