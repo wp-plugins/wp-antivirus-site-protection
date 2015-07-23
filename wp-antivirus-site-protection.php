@@ -3,7 +3,7 @@
 Plugin Name: WP Antivirus Site Protection (by SiteGuarding.com)
 Plugin URI: http://www.siteguarding.com/en/website-extensions
 Description: Adds more security for your WordPress website. Server-side scanning. Performs deep website scans of all the files. Virus and Malware detection.
-Version: 5.3
+Version: 5.4
 Author: SiteGuarding.com (SafetyBis Ltd.)
 Author URI: http://www.siteguarding.com
 License: GPLv2
@@ -1672,34 +1672,6 @@ else $account_type_txt = 'Get PRO version of WP Antivirus Site Protection';
 <p class="avp_getpro"><a href="https://www.siteguarding.com/en/buy-service/antivirus-site-protection?domain=<?php echo urlencode( get_site_url() ); ?>&email=<?php echo urlencode(get_option( 'admin_email' )); ?>" target="_blank"><?php echo $account_type_txt; ?></a></p>
 
 
-<div class="mod-box"><div>
-<h3>Latest Reports</h3>	
-<?php
-$reports = $params['reports'];
-//print_r($params);
-if (count($reports)) {
-	?>
-	<p>
-	<?php
-		foreach ($reports as $report_info) {
-	?>
-			<a href="<?php echo $report_info['report_link']; ?>" target="_blank">Click to view report for <?php echo $report_info['domain']; ?>. Date: <?php echo $report_info['date']; ?></a><br />
-	<?php
-		}
-	?>
-	</p>
-	<?php
-} else {
-?>
-	<p>You don't have any available report yet. Please scan your website.</p>
-<?php
-}
-?>
-
-<img class="imgpos" alt="WP Antivirus Site Protection" src="<?php echo plugins_url('images/', __FILE__).'left_box.png'; ?>" width="110" height="70">
-			
-</div></div>
-
 
 <div class="mod-box"><div>	
 <h3>Antivirus Scanner</h3>		
@@ -1771,11 +1743,11 @@ if (count($reports)) {
 		if ($params['membership'] == 'pro') 
 		{
 			?>
-			<input type="submit" name="submit" id="submit" class="button button-primary" value="Quarantine & Remove malware" onclick="return confirm('Before use this feature, please make sure that you have sent the files for analyze and got reply from SiteGuarding.com\nMove files to quarantine?')">
+			<input type="submit" name="submit" id="submit" class="button button-primary" value="Quarantine malware" onclick="return confirm('Before use this feature, please make sure that you have sent the files for analyze and got reply from SiteGuarding.com\nMove files to quarantine?')">
 			<?php
 		} else {
 			?>
-			<input type="button" class="button button-primary" value="Quarantine & Remove malware" onclick="javascript:alert('Available in PRO version only. Please Upgrade to PRO version.');">
+			<input type="button" class="button button-primary" value="Quarantine malware" onclick="javascript:alert('Available in PRO version only. Please Upgrade to PRO version.');">
 			<?php
 		}
 		?>	
@@ -1800,6 +1772,15 @@ if (count($reports)) {
 	</div>
 	</div>
 	</div>
+    
+    <h3 class="howitworks">Do you need clean and protected website? Please learn how it works.</h3>
+    <p class="howitworks">Our security packages cover all your needs. Focus on your business and leave security to us.</p>
+    <a href="https://www.siteguarding.com/en/protect-your-website" target="_blank"><img class="howitworks" alt="Security Package. How it works" src="<?php echo plugins_url('images/', __FILE__).'how-it-works.png'; ?>"></a>
+	<form class="howitworks" method="post" action="https://www.siteguarding.com/en/protect-your-website">
+		<p class="submit startscanner">
+		  <input type="submit" name="submit" class="button button-primary greenbg" value="Protect My Website">
+		</p>
+	</form>
 	
 	
 
@@ -1999,6 +1980,38 @@ if ( ($params['last_scan_files_counters']['main'] > 0 || $params['last_scan_file
 <img class="imgpos" alt="WP Antivirus Site Protection" src="<?php echo plugins_url('images/', __FILE__).'mid_box.png'; ?>" width="110" height="70">
 			
 </div></div>
+
+
+
+
+<div class="mod-box"><div>
+<h3>Latest Reports</h3>	
+<?php
+$reports = $params['reports'];
+//print_r($params);
+if (count($reports)) {
+	?>
+	<p>
+	<?php
+		foreach ($reports as $report_info) {
+	?>
+			<a href="<?php echo $report_info['report_link']; ?>" target="_blank">Click to view report for <?php echo $report_info['domain']; ?>. Date: <?php echo $report_info['date']; ?></a><br />
+	<?php
+		}
+	?>
+	</p>
+	<?php
+} else {
+?>
+	<p>You don't have any available report yet. Please scan your website.</p>
+<?php
+}
+?>
+
+<img class="imgpos" alt="WP Antivirus Site Protection" src="<?php echo plugins_url('images/', __FILE__).'left_box.png'; ?>" width="110" height="70">
+			
+</div></div>
+
 		
 		<?php self::HelpBlock(); ?>
 
@@ -2014,7 +2027,7 @@ if ($params['membership'] != 'pro') {
 	</div>
 	
 	<div class="RekaBlock">
-		<a href="http://www.getbestwebdesign.com/">
+		<a href="http://www.safetybis.com/">
 		<img class="effect7" src="<?php echo plugins_url('images/rek2.png', __FILE__); ?>" />
 		</a>
 	</div>

@@ -1,7 +1,7 @@
 <?php
 class SGAntiVirus_scanner
 {
-    public static  $scanner_version = '1.1';
+    public static  $scanner_version = '2.0';
     public static  $debug = true;
     
 	public static  $bool_list = array(0 => 'FALSE', 1 => 'TRUE');
@@ -722,6 +722,7 @@ class SGAntiVirus_scanner
      	$ch = curl_init();
     	curl_setopt($ch, CURLOPT_URL,$target_url);
     	curl_setopt($ch, CURLOPT_POST,1);
+        curl_setopt($ch, CURLOPT_SAFE_UPLOAD,false);
     	curl_setopt($ch, CURLOPT_POSTFIELDS, $post);
     	curl_setopt($ch, CURLOPT_INFILE, $file_name_with_full_path);
     	curl_setopt($ch, CURLOPT_INFILESIZE, filesize($file_name_with_full_path));
