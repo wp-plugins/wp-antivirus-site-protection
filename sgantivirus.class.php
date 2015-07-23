@@ -6,7 +6,7 @@ include_once('zip.class.php');
 
 class SGAntiVirus_module
 {
-	public static  $antivirus_version = '5.4';
+	public static  $antivirus_version = '5.5';
 	public static  $antivirus_platform = 'wordpress';
 	public static  $antivirus_cms = 'wordpress';
 	
