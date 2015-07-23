@@ -134,6 +134,12 @@ padding-bottom: 18px;
 .avp_latestfiles_block p{padding:1px 0;margin:0}
 .avpextraoption_txt{width:70%; padding-right:20px}
 
+img.howitworks{width: 100%;}
+h3.howitworks{text-align: center;padding: 25px 0 0 0;text-decoration: underline;}
+p.howitworks{text-align: center;}
+form.howitworks{padding: 0 0 20px 0}
+.greenbg{background-color:#4B9308!important;border: 1px solid #340d27 \9!important;}
+
 
 
 
